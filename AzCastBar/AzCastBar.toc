@@ -1,0 +1,52 @@
+## Interface: 100107
+## Version: 20.10.31
+## Title: AzCastBar
+## Author: Aezay (Earthen Ring EU)
+## Notes: Casting Bar Addon with Plugin Support
+## SavedVariables: FlightTimes_Data
+## SavedVariablesPerCharacter: AzCastBar_Config
+
+Libs\LibTableRecycler.lua
+acbCore.lua
+
+## Flight
+Modules\acb_FlightTimes\acbFlightTimes.lua
+Modules\acb_FlightTimes\routes.lua
+
+## Auras
+Modules\acb_Auras\LibWeaponEnchant.lua
+Modules\acb_Auras\acbAuras.lua
+
+## BattleGrounds *See readme
+Modules\acb_BattleGround\acbBattleGrounds.lua
+
+## Castbar
+Modules\acb_Castbar\acbCast.lua
+
+## Cooldowns
+Modules\acb_Cooldowns\acbCooldowns.lua
+
+## XP
+Modules\acb_Experience\acbExperience.lua
+
+## Global CoolDown
+Modules\acb_GlobalCooldown\acbGlobalCooldown.lua
+
+## Loot Roll *See readme
+Modules\acb_LootRoll\acbLootRoll.lua
+
+## Mirror Bars
+Modules\acb_Mirror\acbMirror.lua
+
+## Shaman
+Modules\acb_Shaman\LibWeaponEnchant.lua
+Modules\acb_Shaman\acbShaman.lua
+
+## Swing
+Modules\acb_Swing\acbSwing.lua
+
+## Threat
+Modules\acb_Threat\acbThreat.lua
+
+## Totems
+Modules\acb_Totems\acbTotems.lua
