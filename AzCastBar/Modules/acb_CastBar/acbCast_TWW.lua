@@ -269,44 +269,44 @@ events.UNIT_SPELLCAST_CHANNEL_UPDATE = events.UNIT_SPELLCAST_DELAYED;
 function events:UNIT_SPELLCAST_EMPOWER_START(event, unit, lineID, spellID)
 if (self.unit ~= unit) then return end
 
-	-- Fallback to GetSpellInfo in case UnitCastingInfo fails
-	local spell, _, texture = GetSpellInfo(spellID)
-	local _, _, _, startTime, endTime = UnitCastingInfo(unit)
-	if not startTime or not endTime then return end
+        -- Fallback to GetSpellInfo in case UnitCastingInfo fails
+        local spell, _, texture = GetSpellInfo(spellID);
+        local _, _, _, startTime, endTime = UnitCastingInfo(unit);
+        if not startTime or not endTime then return end;
 
-		startTime = startTime / 1000
-		endTime = endTime / 1000
-		local castTime = endTime - startTime
+        startTime = startTime / 1000;
+        endTime   = endTime / 1000;
+        local castTime = endTime - startTime;
 
-		self.isCast = true
-		self.isChannel = false
-		self.castTime = castTime
-		self.startTime, self.endTime = startTime, endTime
-		self.lineID = lineID
-		self.nonInterruptible = false
+        self.isCast = true;
+        self.isChannel = false;
+        self.isEmpower = true;
+        self.castTime = castTime;
+        self.startTime, self.endTime = startTime, endTime;
+        self.lineID = lineID;
+        self.nonInterruptible = false;
 
-		self.status:SetStatusBarColor(unpack(self.cfg.colNormal))
-		self.icon:SetTexture(texture)
-		self.name:SetText(spell .. " (Empowering)")
+        self.status:SetStatusBarColor(unpack(self.cfg.colNormal));
+        self.icon:SetTexture(texture);
+        self.name:SetText(spell .. " (Empowering)");
 
-		self:ResetAndShow(castTime, 1)
-		end
+        self:ResetAndShow(castTime, 1);
+end
 
-		-- Empower Stage Update
-		function events:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, lineID, spellID)
-		if (self.unit ~= unit or not self.isCast) then return end
-			local stage = UnitEmpowerStage(unit)
-			if stage then
-				self.name:SetText(self.name:GetText():gsub(" %(Stage %d+%)", ""):gsub(" %(Empowering%)", "") .. " (Stage " .. stage .. ")")
-				end
-				end
-
-				-- Empower Stop
-				function events:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, lineID, spellID)
-				if (self.unit ~= unit) or not self.isCast then return end
-					self.status:SetValue(self.castTime)
-					self:StartFadeOut()
-					end
+-- Empower Stage Update
+function events:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, lineID, spellID)
+        if (self.unit ~= unit) or not self.isEmpower then return end
+        local stage = UnitEmpowerStage(unit);
+        if stage then
+                self.name:SetText(self.name:GetText():gsub(" %(Stage %d+%)", ""):gsub(" %(Empowering%)", "") .. " (Stage " .. stage .. ")");
+        end
+end
+-- Empower Stop
+function events:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, lineID, spellID)
+        if (self.unit ~= unit) or not self.isEmpower then return end
+        self.status:SetValue(self.castTime);
+        self:StartFadeOut();
+end
 
 
 --------------------------------------------------------------------------------------------------------
@@ -373,6 +373,7 @@ local function StartFadeOut(self)
 	if (not self.fadeTime) then
 		self.isCast = nil;
 		self.isChannel = nil;
+                self.isEmpower = nil;
 		self.fadeTime = self.cfg.fadeTime;
 		if (self.unit == "player") then
 			tradeCountTotal = nil;
