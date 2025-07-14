@@ -87,55 +87,19 @@ end
 
 -- Spell Cast Succeeded
 function plugin:UNIT_SPELLCAST_SUCCEEDED(event,unit,castGUID,spellId)
-        if (unit == "player") then
-                local autoShotInfo = autoShotSpells[spellId];
-                if (autoShotInfo) then
-                        self:StartSwing(UnitAttackSpeed("player"), autoShotInfo.name or "Auto");
-                elseif (spellId == slamId) and (self.slamStart) then
-                        self.startTime = (self.startTime + GetTime() - self.slamStart);
-                        self.slamStart = nil;
-                -- Az: cata has no spells that are on next melee afaik?
+if (unit == "player") then
+	local autoShotInfo = autoShotSpells[spellId];
+if (autoShotInfo) then
+	self:StartSwing(UnitAttackSpeed("player"), autoShotInfo.name or "Auto");
+elseif (spellId == slamId) and (self.slamStart) then
+	self.startTime = (self.startTime + GetTime() - self.slamStart);
+self.slamStart = nil;
+-- Az: cata has no spells that are on next melee afaik?
 --              elseif (spellSwingReset[spell]) then
 --                      self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
-                end
-        end
 end
- 
- -- Combat Log Parser
- function plugin:COMBAT_LOG_EVENT_UNFILTERED(event)
- 	self:OnCombatEvent(CombatLogGetCurrentEventInfo());
- end
- 
- -- Spell Cast Succeeded
--function plugin:UNIT_SPELLCAST_SUCCEEDED(event,unit,castGUID,spellId)
--	if (unit == "player") then
--		self:StartSwing(UnitAttackSpeed("player"), autoShotName and autoShotName.name or "Auto")
--		--local autoShotName = autoShotSpells[spellId];
--		if (autoShotName) then
--			self:StartSwing(UnitAttackSpeed("player"), autoShotName)--self:StartSwing(UnitRangedDamage("player"),autoShotName);
--		elseif (spellId == slamId) and (self.slamStart) then
--			self.startTime = (self.startTime + GetTime() - self.slamStart);
--			self.slamStart = nil;
--		-- Az: cata has no spells that are on next melee afaik?
----		elseif (spellSwingReset[spell]) then
----			self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
--		end
--	end
--end
-+function plugin:UNIT_SPELLCAST_SUCCEEDED(event,unit,castGUID,spellId)
-+        if (unit == "player") then
-+                local autoShotInfo = autoShotSpells[spellId];
-+                if (autoShotInfo) then
-+                        self:StartSwing(UnitAttackSpeed("player"), autoShotInfo.name or "Auto");
-+                elseif (spellId == slamId) and (self.slamStart) then
-+                        self.startTime = (self.startTime + GetTime() - self.slamStart);
-+                        self.slamStart = nil;
-+                -- Az: cata has no spells that are on next melee afaik?
-+--              elseif (spellSwingReset[spell]) then
-+--                      self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
-+                end
-+        end
-+end
+end
+end
  
  -- Warrior Only
  if (classID == "WARRIOR") then
@@ -157,11 +121,6 @@ end
  --                                          Initialise Plugin                                         --
  --------------------------------------------------------------------------------------------------------
  
- -- OnUpdate
- function plugin:OnUpdate(elapsed)
- 	-- No update on slam suspend
- 	if (self.slamStart) then
-
 
 -- Warrior Only
 if (classID == "WARRIOR") then
