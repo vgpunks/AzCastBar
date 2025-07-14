@@ -95,7 +95,64 @@ local function OnEvent(self,event)
 	-- settings
 	self.ValidateSettings();
 	self.ApplyAllSettings();
-	-- Backwards compatability: Add global names for all bar frames, mainly a request for people who wish to anchor panels around bars
+	diff --git a/AzCastBar/acbCore.lua b/AzCastBar/acbCore.lua
+index 836f794a3ef23f1d53ffb78bb2e694d25011748a..f5e961aba4d0833d9091cf53e96447308db45859 100644
+--- a/AzCastBar/acbCore.lua
++++ b/AzCastBar/acbCore.lua
+@@ -73,51 +73,51 @@ local labelAlignOffset = { LEFT = 3, CENTER = 0, RIGHT = -3 };
+ local StatusBarSetValue = getmetatable(GameTooltipStatusBar).__index.SetValue;
+ 
+ -- References in main Table
+ acb.frames = {};
+ acb.mixins = {};
+ acb.defOptions = ACB_DefOptions;
+ 
+ --------------------------------------------------------------------------------------------------------
+ --                                     OnEvent - Variables Loaded                                     --
+ --------------------------------------------------------------------------------------------------------
+ 
+ -- Modify All CastBars to fit the Users Settings on "VARIABLES_LOADED"
+ local function OnEvent(self,event)
+ 	-- cfg
+ 	if (not AzCastBar_Config) then
+ 		AzCastBar_Config = {};
+ 	end
+ 	cfg = AzCastBar_Config;
+ 	-- default font
+ 	local gameFont = GameFontNormal:GetFont();
+ 	ACB_DefOptions.nameFontFace = gameFont;
+ 	ACB_DefOptions.timeFontFace = gameFont;
+ 	-- settings
+ 	self.ValidateSettings();
+ 	self.ApplyAllSettings();
+-	-- Backwards compatability: Add global names for all bar frames, mainly a request for people who wish to anchor panels around bars
++	-- Backwards compatibility: Add global names for all bar frames, mainly a request for people who wish to anchor panels around bars
+ 	for _, plugin in ipairs(self.frames) do
+ 		if (not plugin:GetName()) then
+ 			_G["AzCastBarPlugin"..plugin.token] = plugin;
+ 		end
+ 	end
+ 	-- clean
+ 	OnEvent = nil;
+ 	self:SetScript("OnEvent",nil);
+ end
+ 
+ acb:SetScript("OnEvent",OnEvent);
+ acb:RegisterEvent("VARIABLES_LOADED");
+ 
+ --------------------------------------------------------------------------------------------------------
+ --                                          Helper Functions                                          --
+ --------------------------------------------------------------------------------------------------------
+ 
+ -- Default OnEvent Script
+ local function Default_OnEvent(self,event,...)
+ 	if (self[event]) then
+ 		self[event](self,event,...);
+ 	end
+ end
+ 
+ -- Will Reverse the StatusBar, and update the spark
+
 	for _, plugin in ipairs(self.frames) do
 		if (not plugin:GetName()) then
 			_G["AzCastBarPlugin"..plugin.token] = plugin;
