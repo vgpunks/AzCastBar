@@ -4,4 +4,4 @@
 ## Author: Aezay (Earthen Ring EU)
 ## Notes: CastBar Plugin for AzCastBar
 ## Dependencies: AzCastBar
-acbCast.lua
+acbCast_TWW.lua
