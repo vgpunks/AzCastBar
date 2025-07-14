@@ -22,8 +22,8 @@ Modules\acb_Auras\acbAuras_TWW.lua
 Modules\acb_BattleGround\acbBattleGrounds.lua
 
 ## Castbar
-## Modules\acb_Castbar\acbCast.lua
-Modules\acb_Castbar\acbCast_TWW.lua
+## Modules\acb_CastBar\acbCast.lua
+Modules\acb_CastBar\acbCast_TWW.lua
 
 ## Cooldowns
 Modules\acb_Cooldowns\acbCooldowns.lua
