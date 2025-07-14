@@ -86,21 +86,91 @@ function plugin:COMBAT_LOG_EVENT_UNFILTERED(event)
 end
 
 -- Spell Cast Succeeded
-function plugin:UNIT_SPELLCAST_SUCCEEDED(event,unit,castGUID,spellId)
-	if (unit == "player") then
-		self:StartSwing(UnitAttackSpeed("player"), autoShotName and autoShotName.name or "Auto")
-		--local autoShotName = autoShotSpells[spellId];
-		if (autoShotName) then
-			self:StartSwing(UnitAttackSpeed("player"), autoShotName)--self:StartSwing(UnitRangedDamage("player"),autoShotName);
-		elseif (spellId == slamId) and (self.slamStart) then
-			self.startTime = (self.startTime + GetTime() - self.slamStart);
-			self.slamStart = nil;
-		-- Az: cata has no spells that are on next melee afaik?
---		elseif (spellSwingReset[spell]) then
---			self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
-		end
-	end
-end
+diff --git a/AzCastBar/Modules/acb_Swing/acbSwing.lua b/AzCastBar/Modules/acb_Swing/acbSwing.lua
+index f26ab5b55ef29367fde3c4e43df22642a4b71ca1..bacd0acd887bd7aaf9a79d165ff78d2435766e1a 100644
+--- a/AzCastBar/Modules/acb_Swing/acbSwing.lua
++++ b/AzCastBar/Modules/acb_Swing/acbSwing.lua
+@@ -64,65 +64,64 @@ function plugin:OnCombatEvent(timestamp,event,hideCaster,sourceGUID,sourceName,s
+ 			self:StartSwing(UnitAttackSpeed("player"), meleeSwing.name or "Swing")
+ 			--self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
+ 		end
+ 	-- Something Happens to our Player
+ 	elseif (destGUID == playerGUID) then
+ 		local prefix, suffix = event:match(COMBAT_EVENT_PREFIX_SUFFIX);
+ 		local missType = ...;
+ 		-- Az: the info on wowwiki seemed obsolete, so this might not be 100% correct, I had to ignore the 20% rule as that didn't seem to be correct from tests
+ 		if (prefix == "SWING") and (suffix == "MISSED") and (self.duration) and (missType == "PARRY") then
+ 			local newDuration = (self.duration * 0.6);
+ --			local newTimeLeft = (self.startTime + newDuration - GetTime());
+ 			self.duration = newDuration;
+ 			self.status:SetMinMaxValues(0,self.duration);
+ 			self.status:SetStatusBarColor(unpack(self.cfg.colParry));
+ 			self.totalTimeText = self:FormatTotalTime(self.duration,1);
+ 		end
+ 	end
+ end
+ 
+ -- Combat Log Parser
+ function plugin:COMBAT_LOG_EVENT_UNFILTERED(event)
+ 	self:OnCombatEvent(CombatLogGetCurrentEventInfo());
+ end
+ 
+ -- Spell Cast Succeeded
+-function plugin:UNIT_SPELLCAST_SUCCEEDED(event,unit,castGUID,spellId)
+-	if (unit == "player") then
+-		self:StartSwing(UnitAttackSpeed("player"), autoShotName and autoShotName.name or "Auto")
+-		--local autoShotName = autoShotSpells[spellId];
+-		if (autoShotName) then
+-			self:StartSwing(UnitAttackSpeed("player"), autoShotName)--self:StartSwing(UnitRangedDamage("player"),autoShotName);
+-		elseif (spellId == slamId) and (self.slamStart) then
+-			self.startTime = (self.startTime + GetTime() - self.slamStart);
+-			self.slamStart = nil;
+-		-- Az: cata has no spells that are on next melee afaik?
+---		elseif (spellSwingReset[spell]) then
+---			self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
+-		end
+-	end
+-end
++function plugin:UNIT_SPELLCAST_SUCCEEDED(event,unit,castGUID,spellId)
++        if (unit == "player") then
++                local autoShotInfo = autoShotSpells[spellId];
++                if (autoShotInfo) then
++                        self:StartSwing(UnitAttackSpeed("player"), autoShotInfo.name or "Auto");
++                elseif (spellId == slamId) and (self.slamStart) then
++                        self.startTime = (self.startTime + GetTime() - self.slamStart);
++                        self.slamStart = nil;
++                -- Az: cata has no spells that are on next melee afaik?
++--              elseif (spellSwingReset[spell]) then
++--                      self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
++                end
++        end
++end
+ 
+ -- Warrior Only
+ if (classID == "WARRIOR") then
+ 	-- Spell Cast Start
+ 	function plugin:UNIT_SPELLCAST_START(event,unit,castGUID,spellId)
+ 		if (unit == "player") and (spellId == slamId) then
+ 			self.slamStart = GetTime();
+ 		end
+ 	end
+ 	-- Spell Cast Interrupted
+ 	function plugin:UNIT_SPELLCAST_INTERRUPTED(event,unit,castGUID,spellId)
+ 		if (unit == "player") and (spellId == slamId) and (self.slamStart) then
+ 			self.slamStart = nil;
+ 		end
+ 	end
+ end
+ 
+ --------------------------------------------------------------------------------------------------------
+ --                                          Initialise Plugin                                         --
+ --------------------------------------------------------------------------------------------------------
+ 
+ -- OnUpdate
+ function plugin:OnUpdate(elapsed)
+ 	-- No update on slam suspend
+ 	if (self.slamStart) then
+
 
 -- Warrior Only
 if (classID == "WARRIOR") then
