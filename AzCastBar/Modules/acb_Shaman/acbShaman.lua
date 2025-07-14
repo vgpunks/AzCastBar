@@ -13,7 +13,7 @@ local extraOptions = {
 		[0] = "Filters",
 		{ type = "Check", var = "showEnchants", default = true, label = "Show Weapon Imbues" },
 		{ type = "Check", var = "showShields", default = true, label = "Show Elemental Shields" },
-		{ type = "Check", var = "showBloodlust", default = true, label = "Show Blodlust / Heroism" },
+		{ type = "Check", var = "showBloodlust", default = true, label = "Show Bloodlust / Heroism" },
 		{ type = "Check", var = "showEleMastery", default = true, label = "Show Elemental Mastery" },
 		{ type = "Check", var = "showMaelstrom", default = true, label = "Show Maelstrom" },
 		{ type = "Check", var = "showWolves", default = true, label = "Show Spirit Wolves" },
