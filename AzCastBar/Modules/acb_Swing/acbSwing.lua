@@ -88,10 +88,9 @@ end
 -- Spell Cast Succeeded
 function plugin:UNIT_SPELLCAST_SUCCEEDED(event,unit,castGUID,spellId)
 	if (unit == "player") then
-		self:StartSwing(UnitAttackSpeed("player"), autoShotName and autoShotName.name or "Auto")
-		--local autoShotName = autoShotSpells[spellId];
+                local autoShotName = autoShotSpells[spellId];
 		if (autoShotName) then
-			self:StartSwing(UnitAttackSpeed("player"), autoShotName)--self:StartSwing(UnitRangedDamage("player"),autoShotName);
+			self:StartSwing(UnitAttackSpeed("player"), autoShotName.name or autoShotName)--self:StartSwing(UnitRangedDamage("player"),autoShotName);
 		elseif (spellId == slamId) and (self.slamStart) then
 			self.startTime = (self.startTime + GetTime() - self.slamStart);
 			self.slamStart = nil;
