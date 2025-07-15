@@ -83,58 +83,7 @@ local function OnUpdate(self,elapsed)
         end
 end
 
--- Empower Cast Stage Marks ----------------------------------------------------
-local function HideEmpowerMarks(self)
-       if self.empowerMarks then
-               for _, tex in ipairs(self.empowerMarks) do
-                       tex:Hide();
-               end
-       end
-end
-
-local function ShowEmpowerMarks(self, spellID)
-       HideEmpowerMarks(self);
-       if not (C_CastingInfo and C_CastingInfo.GetEmpowerSpellInfo) then
-               return;
-       end
-       local info = C_CastingInfo.GetEmpowerSpellInfo(spellID);
-       if not info or not info.numStages or not info.stageDurations then
-               return;
-       end
-       local total = 0;
-       for i = 1, info.numStages do
-               total = total + info.stageDurations[i];
-       end
-       if total <= 0 then
-               return;
-       end
-       if not self.empowerMarks then
-               self.empowerMarks = {};
-       end
-       local width = self.status:GetWidth();
-       local height = self.status:GetHeight();
-       local acc = 0;
-       for i = 1, info.numStages - 1 do
-               acc = acc + info.stageDurations[i];
-               local mark = self.empowerMarks[i];
-               if not mark then
-                       mark = self.status:CreateTexture(nil, "OVERLAY");
-                       mark:SetColorTexture(1,1,1,0.8);
-                       self.empowerMarks[i] = mark;
-               end
-               mark:SetWidth(2);
-               mark:ClearAllPoints();
-               mark:SetPoint("TOPLEFT", self.status, "LEFT", acc / total * width, 0);
-               mark:SetPoint("BOTTOMLEFT", self.status, "LEFT", acc / total * width, 0);
-               mark:SetHeight(height);
-               mark:Show();
-       end
-       for i = info.numStages, #self.empowerMarks do
-               if self.empowerMarks[i] then
-                       self.empowerMarks[i]:Hide();
-               end
-       end
-end
+-- Empower Cast Stage Marks are no longer used
 
 --------------------------------------------------------------------------------------------------------
 --                                           Event Handling                                           --
@@ -186,7 +135,6 @@ end
 -- Cast/Channel Start -- lineID is zero for channeled
 -- [18.07.19] 8.0/BfA: UnitCastingInfo/UnitChannelInfo "dropped second parameter (nameSubtext)"
 function events:UNIT_SPELLCAST_START(event,unit,lineID,spellID)
-       HideEmpowerMarks(self);
        -- Initialise
 	local isCast = (event == "UNIT_SPELLCAST_START");
 	local isChannel = (event == "UNIT_SPELLCAST_CHANNEL_START");
@@ -356,7 +304,6 @@ function events:UNIT_SPELLCAST_EMPOWER_START(event, unit, lineID, spellID)
        self.delayText = ""
 
        self:ResetAndShow(castTime, 1)
-       ShowEmpowerMarks(self, spellID)
 end
 
 -- Empower Stage Update
@@ -468,7 +415,6 @@ local function StartFadeOut(self)
                         self.tradeCount = nil;
                         self.safezone:Hide();
                 end
-               HideEmpowerMarks(self);
         end
 end
 
