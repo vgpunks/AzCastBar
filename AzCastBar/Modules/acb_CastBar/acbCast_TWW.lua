@@ -269,45 +269,72 @@ events.UNIT_SPELLCAST_CHANNEL_UPDATE = events.UNIT_SPELLCAST_DELAYED;
 
 -- Empower Start
 function events:UNIT_SPELLCAST_EMPOWER_START(event, unit, lineID, spellID)
-if (self.unit ~= unit) then return end
+        if (self.unit ~= unit) then return end
 
-        -- Fallback to GetSpellInfo in case UnitCastingInfo fails
-        local spell, _, texture = GetSpellInfo(spellID);
-        local _, _, _, startTime, endTime = UnitCastingInfo(unit);
-        if not startTime or not endTime then return end;
+        -- Empowered casts behave like channels, so fall back to UnitChannelInfo
+        local spell, _, texture, startTime, endTime = UnitCastingInfo(unit)
+        if not startTime then
+                spell, _, texture, startTime, endTime = UnitChannelInfo(unit)
+        end
+        if not startTime or not endTime then
+                spell, _, texture = GetSpellInfo(spellID)
+                return
+        end
 
-        startTime = startTime / 1000;
-        endTime   = endTime / 1000;
-        local castTime = endTime - startTime;
+        startTime = startTime / 1000
+        endTime   = endTime / 1000
+        local castTime = endTime - startTime
 
-        self.isCast = true;
-        self.isChannel = false;
-        self.isEmpower = true;
-        self.castTime = castTime;
-        self.startTime, self.endTime = startTime, endTime;
-        self.lineID = lineID;
-        self.nonInterruptible = false;
+        self.isCast = true
+        self.isChannel = false
+        self.isEmpower = true
+        self.castTime = castTime
+        self.startTime, self.endTime = startTime, endTime
+        self.lineID = lineID
+        self.nonInterruptible = false
 
-        self.status:SetStatusBarColor(unpack(self.cfg.colNormal));
-        self.icon:SetTexture(texture);
-        self.name:SetText(spell .. " (Empowering)");
+        self.status:SetStatusBarColor(unpack(self.cfg.colNormal))
+        self.icon:SetTexture(texture)
+        self.name:SetText((spell or "") .. " (Empowering)")
 
-        self:ResetAndShow(castTime, 1);
+        self:ResetAndShow(castTime, 1)
 end
 
 -- Empower Stage Update
 function events:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, lineID, spellID)
         if (self.unit ~= unit) or not self.isEmpower then return end
-        local stage = UnitEmpowerStage(unit);
+
+        -- Refresh timing using channel info so the bar progresses correctly
+        local _, _, _, startTime, endTime = UnitChannelInfo(unit)
+        if startTime and endTime then
+                startTime = startTime / 1000
+                endTime = endTime / 1000
+                self.startTime = startTime
+                self.endTime = endTime
+                self.castTime = endTime - startTime
+        end
+
+        local stage = UnitEmpowerStage(unit)
         if stage then
-                self.name:SetText(self.name:GetText():gsub(" %(Stage %d+%)", ""):gsub(" %(Empowering%)", "") .. " (Stage " .. stage .. ")");
+                self.name:SetText(self.name:GetText():gsub(" %(Stage %d+%)", ""):gsub(" %(Empowering%)", "") .. " (Stage " .. stage .. ")")
         end
 end
 -- Empower Stop
 function events:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, lineID, spellID)
         if (self.unit ~= unit) or not self.isEmpower then return end
-        self.status:SetValue(self.castTime);
-        self:StartFadeOut();
+
+        -- Final update to ensure timing is correct when release happens
+        local _, _, _, startTime, endTime = UnitChannelInfo(unit)
+        if startTime and endTime then
+                startTime = startTime / 1000
+                endTime = endTime / 1000
+                self.startTime = startTime
+                self.endTime = endTime
+                self.castTime = endTime - startTime
+        end
+
+        self.status:SetValue(self.castTime)
+        self:StartFadeOut()
 end
 
 
