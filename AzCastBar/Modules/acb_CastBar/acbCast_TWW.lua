@@ -5,6 +5,7 @@ local GetNetStats = GetNetStats;
 local UnitCastingInfo = UnitCastingInfo;
 local UnitChannelInfo = UnitChannelInfo;
 local UnitEmpowerStage = UnitEmpowerStage;
+local C_CastingInfo = C_CastingInfo;
 -- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
 -- C_Spell API when the global does not exist.
 local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
@@ -77,9 +78,60 @@ local function OnUpdate(self,elapsed)
 	elseif ((self.fadeElapsed + elapsed) <= self.fadeTime) then
 		self.fadeElapsed = (self.fadeElapsed + elapsed);
 		self:SetAlpha(self.cfg.alpha - self.fadeElapsed / self.fadeTime * self.cfg.alpha);
-	else
-		self:Hide();
-	end
+        else
+                self:Hide();
+        end
+end
+
+-- Empower Cast Stage Marks ----------------------------------------------------
+local function HideEmpowerMarks(self)
+       if self.empowerMarks then
+               for _, tex in ipairs(self.empowerMarks) do
+                       tex:Hide();
+               end
+       end
+end
+
+local function ShowEmpowerMarks(self, spellID)
+       HideEmpowerMarks(self);
+       if not (C_CastingInfo and C_CastingInfo.GetEmpowerSpellInfo) then
+               return;
+       end
+       local info = C_CastingInfo.GetEmpowerSpellInfo(spellID);
+       if not info or not info.numStages or not info.stageDurations then
+               return;
+       end
+       local total = 0;
+       for i = 1, info.numStages do
+               total = total + info.stageDurations[i];
+       end
+       if total <= 0 then
+               return;
+       end
+       if not self.empowerMarks then
+               self.empowerMarks = {};
+       end
+       local width = self.status:GetWidth();
+       local height = self.status:GetHeight();
+       local acc = 0;
+       for i = 1, info.numStages - 1 do
+               acc = acc + info.stageDurations[i];
+               local mark = self.empowerMarks[i];
+               if not mark then
+                       mark = self.status:CreateTexture(nil, "OVERLAY");
+                       mark:SetColorTexture(1,1,1,0.8);
+                       self.empowerMarks[i] = mark;
+               end
+               mark:SetSize(2, height);
+               mark:ClearAllPoints();
+               mark:SetPoint("CENTER", self.status, "LEFT", acc / total * width, 0);
+               mark:Show();
+       end
+       for i = info.numStages, #self.empowerMarks do
+               if self.empowerMarks[i] then
+                       self.empowerMarks[i]:Hide();
+               end
+       end
 end
 
 --------------------------------------------------------------------------------------------------------
@@ -132,7 +184,8 @@ end
 -- Cast/Channel Start -- lineID is zero for channeled
 -- [18.07.19] 8.0/BfA: UnitCastingInfo/UnitChannelInfo "dropped second parameter (nameSubtext)"
 function events:UNIT_SPELLCAST_START(event,unit,lineID,spellID)
-	-- Initialise
+       HideEmpowerMarks(self);
+       -- Initialise
 	local isCast = (event == "UNIT_SPELLCAST_START");
 	local isChannel = (event == "UNIT_SPELLCAST_CHANNEL_START");
 	local spell, _, texture, startTime, endTime, isTrade, nonInterruptible;
@@ -297,10 +350,11 @@ function events:UNIT_SPELLCAST_EMPOWER_START(event, unit, lineID, spellID)
         self.icon:SetTexture(texture)
         self.name:SetText((spell or "") .. " (Empowering)")
 
-        self.castDelay = 0
-        self.delayText = ""
+       self.castDelay = 0
+       self.delayText = ""
 
-        self:ResetAndShow(castTime, 1)
+       self:ResetAndShow(castTime, 1)
+       ShowEmpowerMarks(self, spellID)
 end
 
 -- Empower Stage Update
@@ -407,12 +461,13 @@ local function StartFadeOut(self)
 		self.isChannel = nil;
                 self.isEmpower = nil;
 		self.fadeTime = self.cfg.fadeTime;
-		if (self.unit == "player") then
-			tradeCountTotal = nil;
-			self.tradeCount = nil;
-			self.safezone:Hide();
-		end
-	end
+                if (self.unit == "player") then
+                        tradeCountTotal = nil;
+                        self.tradeCount = nil;
+                        self.safezone:Hide();
+                end
+               HideEmpowerMarks(self);
+        end
 end
 
 -- Initialise Each Bar
