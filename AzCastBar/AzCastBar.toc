@@ -15,14 +15,12 @@ Modules\acb_FlightTimes\routes.lua
 
 ## Auras
 Modules\acb_Auras\LibWeaponEnchant.lua
-##Modules\acb_Auras\acbAuras.lua
 Modules\acb_Auras\acbAuras_TWW.lua
 
 ## BattleGrounds *See readme
 Modules\acb_BattleGround\acbBattleGrounds.lua
 
 ## Castbar
-## Modules\acb_CastBar\acbCast.lua
 Modules\acb_CastBar\acbCast_TWW.lua
 
 ## Cooldowns
