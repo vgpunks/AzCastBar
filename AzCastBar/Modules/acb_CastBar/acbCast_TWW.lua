@@ -297,6 +297,9 @@ function events:UNIT_SPELLCAST_EMPOWER_START(event, unit, lineID, spellID)
         self.icon:SetTexture(texture)
         self.name:SetText((spell or "") .. " (Empowering)")
 
+        self.castDelay = 0
+        self.delayText = ""
+
         self:ResetAndShow(castTime, 1)
 end
 
