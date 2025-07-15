@@ -122,9 +122,11 @@ local function ShowEmpowerMarks(self, spellID)
                        mark:SetColorTexture(1,1,1,0.8);
                        self.empowerMarks[i] = mark;
                end
-               mark:SetSize(2, height);
+               mark:SetWidth(2);
                mark:ClearAllPoints();
-               mark:SetPoint("CENTER", self.status, "LEFT", acc / total * width, 0);
+               mark:SetPoint("TOPLEFT", self.status, "LEFT", acc / total * width, 0);
+               mark:SetPoint("BOTTOMLEFT", self.status, "LEFT", acc / total * width, 0);
+               mark:SetHeight(height);
                mark:Show();
        end
        for i = info.numStages, #self.empowerMarks do
