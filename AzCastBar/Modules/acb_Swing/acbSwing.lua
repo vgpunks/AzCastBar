@@ -23,8 +23,11 @@ local plugin = AzCastBar:CreateMainBar("Frame","Swing",extraOptions);
 local playerGUID = UnitGUID("player");
 
 -- Localized Names
---local slamId = 1464;
---local slam = C_Spell.GetSpellInfo(slamId);
+-- Spell Ids
+local slamId = 1464;
+-- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
+-- C_Spell API when the global does not exist.
+local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
 --local autoShotId = 75;
 --local autoShot = GetSpellInfo(autoShotId);
 --local wandShotId = 5019;
@@ -44,11 +47,11 @@ local playerGUID = UnitGUID("player");
 --	[5019] = C_Spell.GetSpellInfo(5019),		-- wand
 --}
 
-local slam = C_Spell.GetSpellInfo(1464) or { name = "Slam" }
-local meleeSwing = C_Spell.GetSpellInfo(6603) or { name = "Melee" }
+local slam = GetSpellInfo(slamId) or { name = "Slam" }
+local meleeSwing = GetSpellInfo(6603) or { name = "Melee" }
 local autoShotSpells = {
-	[75] = C_Spell.GetSpellInfo(75) or { name = "Auto Shot" },
-	[5019] = C_Spell.GetSpellInfo(5019) or { name = "Shoot" },
+        [75] = GetSpellInfo(75) or { name = "Auto Shot" },
+        [5019] = GetSpellInfo(5019) or { name = "Shoot" },
 }
 
 --------------------------------------------------------------------------------------------------------
@@ -102,20 +105,6 @@ end
 end
  
  -- Warrior Only
- if (classID == "WARRIOR") then
- 	-- Spell Cast Start
- 	function plugin:UNIT_SPELLCAST_START(event,unit,castGUID,spellId)
- 		if (unit == "player") and (spellId == slamId) then
- 			self.slamStart = GetTime();
- 		end
- 	end
- 	-- Spell Cast Interrupted
- 	function plugin:UNIT_SPELLCAST_INTERRUPTED(event,unit,castGUID,spellId)
- 		if (unit == "player") and (spellId == slamId) and (self.slamStart) then
- 			self.slamStart = nil;
- 		end
- 	end
- end
  
  --------------------------------------------------------------------------------------------------------
  --                                          Initialise Plugin                                         --
