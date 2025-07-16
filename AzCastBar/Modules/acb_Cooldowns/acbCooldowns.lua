@@ -82,9 +82,15 @@ function plugin:QueryCooldowns()
                                 local cooldown = C_Spell.GetSpellCooldown(spellID)
                                 local start, duration = cooldown.startTime, cooldown.duration
                                 if (duration) and (duration > 0) and (duration > self.cfg.minShownCooldown) and (self.cfg.maxShownCooldown == 0 or duration < self.cfg.maxShownCooldown) then
-                                        local tbl = timers:Fetch();
                                         local spellName, _, texture = C_Spell.GetSpellInfo(spellID);
-                                        tbl.name = spellName; tbl.duration = duration; tbl.startTime = start; tbl.endTime = start + duration; tbl.texture = texture;
+                                        if spellName then
+                                                local tbl = timers:Fetch();
+                                                tbl.name = spellName;
+                                                tbl.duration = duration;
+                                                tbl.startTime = start;
+                                                tbl.endTime = start + duration;
+                                                tbl.texture = texture;
+                                        end
                                 end
                         end
                 end
@@ -101,8 +107,8 @@ function plugin:UpdateTimers()
 		bar.index = index;
 		bar.timer = timer;
 
-		bar.icon:SetTexture(timer.texture);
-		bar.name:SetText(timer.name);
+                bar.icon:SetTexture(timer.texture);
+                bar.name:SetText(timer.name or "");
 
 		bar.status:SetStatusBarColor(unpack(self.cfg.colNormal));
 
