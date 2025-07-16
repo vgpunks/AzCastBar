@@ -66,31 +66,31 @@ end
 
 -- Query Cooldowns
 function plugin:QueryCooldowns()
-	timers:Recycle();
-	for tab = 1, C_SpellBook.GetNumSpellBookSkillLines() do
-	--	local name, texture, offset, numSpells, bool = C_SpellBook.GetSpellBookSkillLineInfo(tab);
-
-		local skillLineInfo = C_SpellBook.GetSpellBookSkillLineInfo(tab)
-		local offset, numSpells, name  = skillLineInfo.itemIndexOffset, skillLineInfo.numSpellBookItems, skillLineInfo.name
-
-		if (not name) then
-			break;
-		end
-		for i = offset+1, offset+numSpells do
-			local start, duration, enabled = C_SpellBook.GetSpellBookItemCooldown(i, Enum.SpellBookSpellBank.Player);
-
-			--local cooldown = C_Spell.GetSpellCooldown(i, Enum.SpellBookSpellBank.Player)
-			--start, duration = cooldown.startTime, cooldown.duration
-
-			if (enabled ~= 0) and (duration) and (duration > self.cfg.minShownCooldown) and (self.cfg.maxShownCooldown == 0 or duration < self.cfg.maxShownCooldown) then
-				local tbl = timers:Fetch();
-				local name, _, texture = C_Spell.GetSpellInfo(i, Enum.SpellBookSpellBank.Player);
-				tbl.name = name; tbl.duration = duration; tbl.startTime = start; tbl.endTime = start + duration; tbl.texture = texture;
-			end
-		end
-	end
-	sort(timers,SortCooldownsFunc);
-	self:UpdateTimers();
+        timers:Recycle();
+        for tab = 1, C_SpellBook.GetNumSpellBookSkillLines() do
+                local skillLineInfo = C_SpellBook.GetSpellBookSkillLineInfo(tab)
+                local offset = skillLineInfo.itemIndexOffset or skillLineInfo.spellOffset or 0
+                local numSpells = skillLineInfo.numSpellBookItems or skillLineInfo.numSlots or 0
+                local name = skillLineInfo.name
+                if (not name) then
+                        break;
+                end
+                for i = offset + 1, offset + numSpells do
+                        local info = C_SpellBook.GetSpellBookItemInfo(i, Enum.SpellBookSpellBank.Player)
+                        local spellID = info and info.spellID
+                        if spellID then
+                                local cooldown = C_Spell.GetSpellCooldown(spellID)
+                                local start, duration = cooldown.startTime, cooldown.duration
+                                if (duration) and (duration > 0) and (duration > self.cfg.minShownCooldown) and (self.cfg.maxShownCooldown == 0 or duration < self.cfg.maxShownCooldown) then
+                                        local tbl = timers:Fetch();
+                                        local spellName, _, texture = C_Spell.GetSpellInfo(spellID);
+                                        tbl.name = spellName; tbl.duration = duration; tbl.startTime = start; tbl.endTime = start + duration; tbl.texture = texture;
+                                end
+                        end
+                end
+        end
+        sort(timers,SortCooldownsFunc);
+        self:UpdateTimers();
 end
 
 -- Updates Timers
