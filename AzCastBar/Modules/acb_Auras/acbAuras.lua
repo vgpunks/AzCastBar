@@ -82,10 +82,10 @@ local function OnUpdate(self,elapsed)
 	if (self.colorTimeoutFlag) and (self.timeLeft <= self.colorTimeoutFlag) then
 		self.colorTimeoutFlag = nil;
 		self.status:SetStatusBarColor(unpack(self.cfg.colTimeOut));
-		if (self.cfg.bgColorAlpha > 0) then
-			self.bg:SetVertexColor(unpack(self.cfg.colTimeOut));
-			self.bg:SetAlpha(self.cfg.bgColorAlpha);
-		end
+               if (self.cfg.bgColorAlpha > 0) then
+                       self.bg:SetVertexColor(unpack(self.cfg.colTimeOut));
+               end
+               self.bg:SetAlpha(self.cfg.bgColorAlpha);
 	end
 end
 
@@ -304,12 +304,12 @@ function AuraPluginMixin:UpdateTimers()
 			color = (timer.type == "ENCHANT" and self.cfg.colEnchant) or (timer.type == "HARMFUL" and self.cfg.colDebuff) or (self.cfg.colBuff);
 		end
 		bar.status:SetStatusBarColor(unpack(color));
-		if (self.cfg.bgColorAlpha > 0) then
-			bar.bg:SetVertexColor(unpack(color));
-			bar.bg:SetAlpha(self.cfg.bgColorAlpha);
-		else
-			bar.bg:SetVertexColor(unpack(self.cfg.colBackGround));
-		end
+               if (self.cfg.bgColorAlpha > 0) then
+                       bar.bg:SetVertexColor(unpack(color));
+               else
+                       bar.bg:SetVertexColor(unpack(self.cfg.colBackGround));
+               end
+               bar.bg:SetAlpha(self.cfg.bgColorAlpha);
 
 		-- OnUpdate script?
 		if (timer.duration == 0) then
