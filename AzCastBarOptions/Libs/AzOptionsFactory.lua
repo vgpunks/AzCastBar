@@ -1,13 +1,13 @@
 --[[
-	———————————————— Rev 09 ———
+	â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€” Rev 09 â€”â€”â€”
 	- Fixed GetChecked() now returning a boolean instead of nil/1
-	——— 16.07.23 ——— Rev 10 ——— 7.0.3/Legion ———
+	â€”â€”â€” 16.07.23 â€”â€”â€” Rev 10 â€”â€”â€” 7.0.3/Legion â€”â€”â€”
 	- Changed SetTexture(r,g,b,a) -> SetColorTexture(r,g,b,a)
-	——— 18.08.12 ——— Rev 11 ——— 8.0/BfA ———
+	â€”â€”â€” 18.08.12 â€”â€”â€” Rev 11 â€”â€”â€” 8.0/BfA â€”â€”â€”
 	- Added native LSM support to the dropdown
 	- The building of the options page is now done internally, instead of in the client addon.
 	- Some code restructure.
-	——— 20.10.31 ——— Rev 12 ——— 9.0.1/Shadowlands ———
+	â€”â€”â€” 20.10.31 â€”â€”â€” Rev 12 â€”â€”â€” 9.0.1/Shadowlands â€”â€”â€”
 	- CreateFrame() now uses the "BackdropTemplate"
 --]]
 
@@ -362,23 +362,29 @@ local function ColorButton_OnClick(self,button)
 
 	-- new functionality for color picker
 
-	CPF:SetupColorPickerAndShow({
+        CPF:SetupColorPickerAndShow({
 
-		r = r,
+                r = r,
 
-		g = g,
+                g = g,
 
-		b = b,
+                b = b,
 
-		opacity = a,
+                opacity = a,
 
-		hasOpacity = true,
+                hasOpacity = true,
 
-		swatchFunc = ColorButton_ColorPickerFunc,
+                swatchFunc = ColorButton_ColorPickerFunc,
 
-		cancelFunc = ColorButton_ColorPickerFunc
+                func = ColorButton_ColorPickerFunc,
 
-	})
+                opacityFunc = ColorButton_ColorPickerFunc,
+
+                cancelFunc = ColorButton_ColorPickerFunc,
+
+                previousValues = cpfState.prevColor,
+
+        })
 
 
 
