@@ -284,8 +284,8 @@ local r, g, b, a
 if (prevVal and prevVal.GetRGBA) then
 	r, g, b, a = prevVal:GetRGBA()
 	else
-		r, g, b = CPF:GetColorRGB()
-		a = CPF.opacity or .2
+       r, g, b = CPF:GetColorRGB()
+       a = 1 - (CPF.opacity or 0)
 		end
 
 		-- Update frame only if it's still showing this option
@@ -362,15 +362,16 @@ local function ColorButton_OnClick(self,button)
 
 	-- new functionality for color picker
 
-        CPF:SetupColorPickerAndShow({
 
-                r = r,
+       CPF:SetupColorPickerAndShow({
 
-                g = g,
+               r = r,
 
-                b = b,
+               g = g,
 
-                opacity = a,
+               b = b,
+
+               opacity = opacity,
 
                 hasOpacity = true,
 
