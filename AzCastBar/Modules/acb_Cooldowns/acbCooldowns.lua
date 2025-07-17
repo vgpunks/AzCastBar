@@ -67,14 +67,17 @@ end
 -- Query Cooldowns
 function plugin:QueryCooldowns()
         timers:Recycle();
-        for tab = 1, C_SpellBook.GetNumSpellBookSkillLines() do
-                local skillLineInfo = C_SpellBook.GetSpellBookSkillLineInfo(tab)
-                local offset = skillLineInfo.itemIndexOffset or skillLineInfo.spellOffset or 0
-                local numSpells = skillLineInfo.numSpellBookItems or skillLineInfo.numSlots or 0
-                local name = skillLineInfo.name
-                if (not name) then
-                        break;
-                end
+       for tab = 1, C_SpellBook.GetNumSpellBookSkillLines() do
+               local skillLineInfo = C_SpellBook.GetSpellBookSkillLineInfo(tab)
+               if not skillLineInfo then
+                       break;
+               end
+               local offset = skillLineInfo.itemIndexOffset or skillLineInfo.spellOffset or 0
+               local numSpells = skillLineInfo.numSpellBookItems or skillLineInfo.numSlots or 0
+               local name = skillLineInfo.name
+               if (not name) then
+                       break;
+               end
                 for i = offset + 1, offset + numSpells do
                         local info = C_SpellBook.GetSpellBookItemInfo(i, Enum.SpellBookSpellBank.Player)
                         local spellID = info and info.spellID
