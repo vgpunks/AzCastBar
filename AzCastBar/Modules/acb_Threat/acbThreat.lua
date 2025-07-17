@@ -2,10 +2,11 @@ local GetTime = GetTime;
 
 -- Extra Options
 local extraOptions = {
-	{
-		[0] = "Options",
-		{ type = "Slider", var = "threshold", default = 75, label = "Display Threshold", min = 0, max = 100, step = 1 },
-	},
+        {
+                [0] = "Options",
+                { type = "Slider", var = "threshold", default = 75, label = "Display Threshold", min = 0, max = 100, step = 1 },
+                { type = "Color", var = "colNormal", default = { 0.4, 0.6, 0.8 }, label = "Threat Bar Color" },
+        },
 };
 
 -- Plugin
