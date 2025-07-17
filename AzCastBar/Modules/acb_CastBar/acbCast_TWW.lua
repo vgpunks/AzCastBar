@@ -418,10 +418,10 @@ local function StartFadeOut(self)
         end
 
        -- Apply updated visual settings immediately
-       self:SetAlpha(cfg.alpha)
-       self.status:SetStatusBarColor(unpack(cfg.colNormal))
+       self:SetAlpha(self.cfg.alpha)
+       self.status:SetStatusBarColor(unpack(self.cfg.colNormal))
        if (self.safezone) then
-               self.safezone:SetColorTexture(unpack(cfg.colSafezone))
+               self.safezone:SetColorTexture(unpack(self.cfg.colSafezone))
        end
 end
 
