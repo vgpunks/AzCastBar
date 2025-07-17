@@ -144,9 +144,12 @@ function plugin:OnConfigChanged(cfg)
 		self:RegisterEvent("CONFIRM_SUMMON");
 		self:RegisterEvent("PLAYER_LEAVING_WORLD");
 		self.status:SetStatusBarColor(unpack(cfg.colNormal));
-	else
-		self:UnregisterAllEvents();
-	end
+        else
+                self:UnregisterAllEvents();
+        end
+
+       self:SetAlpha(cfg.alpha)
+       self.status:SetStatusBarColor(unpack(cfg.colNormal))
 end
 
 --------------------------------------------------------------------------------------------------------

@@ -187,9 +187,15 @@ function plugin:OnConfigChanged(cfg)
 		if (self.type == "xp") then
 			self.status:SetStatusBarColor(unpack(cfg.colXP));
 		end
-	else
-		self:UnregisterAllEvents();
-	end
+        else
+                self:UnregisterAllEvents();
+        end
+
+       -- Apply new alpha and color immediately
+       self:SetAlpha(cfg.alpha)
+       if (self.type == "xp") then
+               self.status:SetStatusBarColor(unpack(cfg.colXP))
+       end
 end
 
 --------------------------------------------------------------------------------------------------------
