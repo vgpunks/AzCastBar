@@ -61,8 +61,6 @@ local ACB_DefOptions = {
 };
 local ACB_DefaultMeta = { __index = ACB_DefOptions };
 
--- Work Table
-local backDrop = { insets = {} };
 
 -- Anchors
 local optimalAnchor = { "ANCHOR_BOTTOMLEFT", "ANCHOR_BOTTOMRIGHT", "ANCHOR_RIGHT", "ANCHOR_LEFT" };
@@ -339,20 +337,25 @@ if (type(plugin.options) == "table") then
 			bar.name:SetTextColor(unpack(barCfg.colNameLabel));
 			bar.time:SetTextColor(unpack(barCfg.colTimeLabel));
 
-			-- Fill in  Backdrop
-			backDrop.bgFile = barCfg.bgFile;
-			--	backDrop.edgeFile = barCfg.edgeFile;
-			--	backDrop.edgeSize = barCfg.edgeSize;
-			backDrop.insets.left = barCfg.backdropIndent;
-			backDrop.insets.right = barCfg.backdropIndent;
-			backDrop.insets.top = barCfg.backdropIndent;
-			backDrop.insets.bottom = barCfg.backdropIndent;
+                        -- Build Backdrop Table
+                        local backDrop = {
+                                bgFile = barCfg.bgFile,
+                                -- edgeFile = barCfg.edgeFile,
+                                -- edgeSize = barCfg.edgeSize,
+                                insets = {
+                                        left = barCfg.backdropIndent,
+                                        right = barCfg.backdropIndent,
+                                        top = barCfg.backdropIndent,
+                                        bottom = barCfg.backdropIndent,
+                                },
+                        };
 
-			-- Alpha + Backdrop
-			bar:SetAlpha(barCfg.alpha);
-                        if (not barCfg.bgFile) or (barCfg.bgFile == "Interface\None") or (barCfg.bgFile == "") then
+                        -- Alpha + Backdrop
+                        bar:SetAlpha(barCfg.alpha);
+                        if (not barCfg.bgFile) or (barCfg.bgFile == "Interface\\None") or (barCfg.bgFile == "") then
                                 bar:SetBackdrop(nil);
                         else
+                                -- Use a fresh table every time to ensure the backdrop updates
                                 bar:SetBackdrop(backDrop);
                         end
                         bar:SetBackdropColor(unpack(barCfg.colBackdrop));
