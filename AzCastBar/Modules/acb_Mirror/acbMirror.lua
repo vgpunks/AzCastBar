@@ -136,12 +136,13 @@ function plugin:OnConfigChanged(cfg)
 					MirrorTimerContainer:RegisterEvent("MIRROR_TIMER_START")
 					MirrorTimerContainer:RegisterEvent("MIRROR_TIMER_STOP")
 					MirrorTimerContainer:RegisterEvent("MIRROR_TIMER_PAUSE")
-				else
-					for i = 1, 3 do
-						_G["MirrorTimer"..i]:RegisterEvent("MIRROR_TIMER_PAUSE")
-						_G["MirrorTimer"..i]:RegisterEvent("MIRROR_TIMER_STOP")
-                end
-        end
+                                else
+                                        for i = 1, 3 do
+                                                _G["MirrorTimer"..i]:RegisterEvent("MIRROR_TIMER_PAUSE")
+                                                _G["MirrorTimer"..i]:RegisterEvent("MIRROR_TIMER_STOP")
+                                        end
+                                end
+                        end
 
        -- Update visuals for all mirror bars
        for _, bar in ipairs(self.bars) do
