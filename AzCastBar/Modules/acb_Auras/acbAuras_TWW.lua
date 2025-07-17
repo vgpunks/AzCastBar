@@ -260,20 +260,34 @@ end
 
 -- Query Auras
 function AuraPluginMixin:QueryAuras(unit,auraType,showSelfAuras,showPetAuras,showStealable)
-	local index = 1;
-	local isFiltered = (showSelfAuras or showPetAuras or showStealable);
-	while (true) do
-		local name, icon, count, debuffType, duration, endTime, casterUnit, isStealable = C_UnitAuras.GetAuraDataByIndex(unit,index,auraType);	-- [18.07.19] 8.0/BfA: "dropped second parameter"
-		if (not name) then
-			break;
-		elseif (not isFiltered) or (showStealable and isStealable) or (showSelfAuras and casterUnit == "player") or (showPetAuras and (casterUnit == "pet" or casterUnit == "vehicle")) then
-			local t = self:NewTimer(auraType, name, icon, duration or 0, endTime or 0);
-			t.index = index;
-			t.count = count;
-			t.debuffType = debuffType;
-		end
-		index = (index + 1);
-	end
+        local index = 1
+        local isFiltered = (showSelfAuras or showPetAuras or showStealable)
+        while true do
+                local name, icon, count, debuffType, duration, endTime, casterUnit, isStealable = C_UnitAuras.GetAuraDataByIndex(unit,index,auraType)
+                if type(name) == "table" then
+                        local auraData = name
+                        if not auraData.name then
+                                break
+                        end
+                        name = auraData.name
+                        icon = auraData.icon
+                        count = auraData.applications
+                        debuffType = auraData.dispelName or auraData.debuffType
+                        duration = auraData.duration
+                        endTime = auraData.expirationTime
+                        casterUnit = auraData.sourceUnit
+                        isStealable = auraData.isStealable
+                elseif not name then
+                        break
+                end
+                if (not isFiltered) or (showStealable and isStealable) or (showSelfAuras and casterUnit == "player") or (showPetAuras and (casterUnit == "pet" or casterUnit == "vehicle")) then
+                        local t = self:NewTimer(auraType, name, icon, duration or 0, endTime or 0)
+                        t.index = index
+                        t.count = count
+                        t.debuffType = debuffType
+                end
+                index = index + 1
+        end
 end
 
 -- Configure Bar
