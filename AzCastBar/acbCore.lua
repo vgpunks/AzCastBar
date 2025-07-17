@@ -350,8 +350,12 @@ if (type(plugin.options) == "table") then
 
 			-- Alpha + Backdrop
 			bar:SetAlpha(barCfg.alpha);
-			bar:SetBackdrop(backDrop);
-			bar:SetBackdropColor(unpack(barCfg.colBackdrop));
+                        if (not barCfg.bgFile) or (barCfg.bgFile == "Interface\None") or (barCfg.bgFile == "") then
+                                bar:SetBackdrop(nil);
+                        else
+                                bar:SetBackdrop(backDrop);
+                        end
+                        bar:SetBackdropColor(unpack(barCfg.colBackdrop));
 			--	bar:SetBackdropBorderColor(unpack(barCfg.colBackdropBorder));
 
 			-- StatusBar Texture -- This code will check if the texture set is valid, if not, it will be defaulted to the one set in "ACB_DefOptions"
