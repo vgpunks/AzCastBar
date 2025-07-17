@@ -69,9 +69,11 @@ function plugin:OnConfigChanged(cfg)
 		if (cfg.showInstants) then
 			self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED");
 		end
-		self:RegisterEvent("UNIT_SPELLCAST_STOP");
-		self.status:SetStatusBarColor(unpack(cfg.colNormal));
-	end
+               self:RegisterEvent("UNIT_SPELLCAST_STOP");
+               self.status:SetStatusBarColor(unpack(cfg.colNormal));
+        end
+
+       self:SetAlpha(cfg.alpha)
 end
 
 --------------------------------------------------------------------------------------------------------

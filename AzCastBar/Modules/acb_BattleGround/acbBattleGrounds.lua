@@ -387,11 +387,20 @@ function plugin:OnConfigChanged(cfg)
 		self:RegisterEvent("UPDATE_BATTLEFIELD_STATUS");
 		self:RegisterEvent("PLAYER_REGEN_ENABLED");
 		self:RegisterEvent("ZONE_CHANGED_NEW_AREA");
-	else
-		self:UnregisterAllEvents();
-		timers:Recycle();
-	end
-	self:UpdateTimers();
+        else
+                self:UnregisterAllEvents();
+                timers:Recycle();
+        end
+        self:UpdateTimers();
+
+       -- Refresh existing bars with new appearance
+       for _, bar in ipairs(self.bars) do
+               bar:SetAlpha(cfg.alpha)
+               local color = bar.table and self.cfg["col"..bar.table.faction] or self.cfg.colNeutral
+               if color then
+                       bar.status:SetStatusBarColor(unpack(color))
+               end
+       end
 end
 
 --------------------------------------------------------------------------------------------------------

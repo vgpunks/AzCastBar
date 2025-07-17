@@ -375,7 +375,7 @@ local function OnConfigChanged(self,cfg)
 		self:StartFadeOut();
 	end
 	-- For Player + Pet
-	if (self.unit == "player" or self.unit == "pet") then
+        if (self.unit == "player" or self.unit == "pet") then
 		if (self.unit == "player") then
 			tradeCountTotal = nil;
 			allowTradeMerge = (cfg.enabled and cfg.mergeTrade);
@@ -388,8 +388,8 @@ local function OnConfigChanged(self,cfg)
 			frame:UnregisterAllEvents();
 			frame.showCastbar = nil;
 			frame:Hide();
-		else
-			frame.showCastbar = (self.unit == "player" and true or UnitIsPossessed("pet"));
+                else
+                        frame.showCastbar = (self.unit == "player" and true or UnitIsPossessed("pet"));
 			for _, event in ipairs(registered_events) do
 				frame:RegisterEvent(event);
 			end
@@ -416,6 +416,13 @@ local function StartFadeOut(self)
                         self.safezone:Hide();
                 end
         end
+
+       -- Apply updated visual settings immediately
+       self:SetAlpha(cfg.alpha)
+       self.status:SetStatusBarColor(unpack(cfg.colNormal))
+       if (self.safezone) then
+               self.safezone:SetColorTexture(unpack(cfg.colSafezone))
+       end
 end
 
 -- Initialise Each Bar

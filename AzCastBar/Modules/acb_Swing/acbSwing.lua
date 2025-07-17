@@ -173,9 +173,13 @@ function plugin:OnConfigChanged(cfg)
 			self:RegisterEvent("UNIT_SPELLCAST_START");
 			self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED");
 		end
-	else
-		self:UnregisterAllEvents();
-	end
+        else
+                self:UnregisterAllEvents();
+        end
+
+       -- Update bar appearance
+       self:SetAlpha(cfg.alpha)
+       self.status:SetStatusBarColor(unpack(self.cfg.colNormal))
 end
 
 plugin.icon:SetTexture("Interface\\Icons\\Spell_Shadow_SoulLeech_2");

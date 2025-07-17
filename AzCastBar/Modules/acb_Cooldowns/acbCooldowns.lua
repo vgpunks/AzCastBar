@@ -132,11 +132,17 @@ function plugin:OnConfigChanged(cfg)
 	if (cfg.enabled) then
 		self:RegisterEvent("SPELL_UPDATE_COOLDOWN");
 		self:QueryCooldowns();
-	else
-		self:UnregisterAllEvents();
-		timers:Recycle();
-		self:UpdateTimers();
-	end
+        else
+                self:UnregisterAllEvents();
+                timers:Recycle();
+                self:UpdateTimers();
+        end
+
+       -- Apply new appearance settings to visible bars
+       for _, bar in ipairs(self.bars) do
+               bar:SetAlpha(cfg.alpha)
+               bar.status:SetStatusBarColor(unpack(cfg.colNormal))
+       end
 end
 
 --------------------------------------------------------------------------------------------------------

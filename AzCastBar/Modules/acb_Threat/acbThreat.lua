@@ -66,9 +66,13 @@ function plugin:OnConfigChanged(cfg)
 		self:RegisterEvent("PLAYER_TARGET_CHANGED");
 		self:RegisterEvent("UNIT_THREAT_LIST_UPDATE");
 		self:RegisterEvent("UNIT_THREAT_SITUATION_UPDATE");
-	else
-		self:Hide();
-	end
+        else
+                self:Hide();
+        end
+
+       -- Update bar look
+       self:SetAlpha(cfg.alpha)
+       self.status:SetStatusBarColor(unpack(self.cfg.colNormal))
 end
 
 --------------------------------------------------------------------------------------------------------
