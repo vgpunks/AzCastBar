@@ -130,9 +130,18 @@ end
 
 -- displays xp gain
 function plugin:DisplayXP()
-	local level, xp, xpMax = UnitLevel("player"), UnitXP("player"), UnitXPMax("player");
-	local xpGain = (xp - self.lastXP);
-	local xpMsg = format("|1%d|r tnl, |1%d|r rested, |1%.2f|r repeats",xpMax - xp,GetXPExhaustion() or 0,(xpMax - xp) / xpGain);
+       local level, xp, xpMax = UnitLevel("player"), UnitXP("player"), UnitXPMax("player");
+
+       -- If the plugin is loaded after the PLAYER_LOGIN event has fired then
+       -- the cached values will not exist. Initialise them on first update
+       if (not self.lastXP) then
+               self.lastXP = xp;
+               self.lastXPMax = xpMax;
+               self.lastLevel = level;
+       end
+
+       local xpGain = (xp - self.lastXP);
+       local xpMsg = format("|1%d|r tnl, |1%d|r rested, |1%.2f|r repeats",xpMax - xp,GetXPExhaustion() or 0,(xpMax - xp) / xpGain);
 
 	self.type = "xp";
 	self:UpdateProgress("Experience",0,xpMax,xp,xpGain,xpMsg,unpack(self.cfg.colXP));
