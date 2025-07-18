@@ -52,18 +52,23 @@ end
 
 -- faction update
 function plugin:UPDATE_FACTION(event)
-	-- Normal faction gains
-	if (repStats) then
-		self:DisplayRep();
-	-- Save a state of all faction standings
-	elseif (GetNumFactions() > 0) then
-		repStats = {};
-		self.repStats = repStats;
-		for factionIndex = 1, GetNumFactions() do
-			local name, _, standingId, _, _, earnedValue = GetFactionInfo(factionIndex);
-			repStats[name] = { standingId = standingId, earnedValue = earnedValue };
-		end
-	end
+       -- Bail out if reputation APIs are unavailable
+       if (type(GetNumFactions) ~= "function" or type(GetFactionInfo) ~= "function") then
+               return
+       end
+
+       -- Normal faction gains
+       if (repStats) then
+               self:DisplayRep();
+       -- Save a state of all faction standings
+       elseif (GetNumFactions() > 0) then
+               repStats = {};
+               self.repStats = repStats;
+               for factionIndex = 1, GetNumFactions() do
+                       local name, _, standingId, _, _, earnedValue = GetFactionInfo(factionIndex);
+                       repStats[name] = { standingId = standingId, earnedValue = earnedValue };
+               end
+       end
 end
 
 -- player login
@@ -140,10 +145,14 @@ end
 
 -- displays reputation gain
 function plugin:DisplayRep()
-	for factionIndex = 1, GetNumFactions() do
-		local name, _, standingId, minValue, maxValue, earnedValue, _, _, isHeader = GetFactionInfo(factionIndex);
-		if (not repStats[name] or repStats[name].earnedValue ~= earnedValue) then
-			local repMsg = "";
+       if (type(GetNumFactions) ~= "function" or type(GetFactionInfo) ~= "function") then
+               return
+       end
+
+       for factionIndex = 1, GetNumFactions() do
+               local name, _, standingId, minValue, maxValue, earnedValue, _, _, isHeader = GetFactionInfo(factionIndex);
+               if (not repStats[name] or repStats[name].earnedValue ~= earnedValue) then
+                       local repMsg = "";
 			-- Generate text to go with it
 			local diff = repStats[name] and (earnedValue - repStats[name].earnedValue) or (earnedValue);
 			if (diff >= 0) then
