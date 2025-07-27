@@ -21,6 +21,9 @@ local timers = LibTableRecycler:New();
 local ignoredSpells = {}
 do
     local revivePet = GetSpellInfo(125439)
+    if type(revivePet) == "table" then
+        revivePet = revivePet.name
+    end
     if revivePet then
         ignoredSpells[revivePet] = true
     end
