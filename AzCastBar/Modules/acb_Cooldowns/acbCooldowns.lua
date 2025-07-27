@@ -1,4 +1,7 @@
 local GetTime = GetTime;
+-- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
+-- C_Spell API when the global does not exist.
+local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
 
 -- Extra Options
 local extraOptions = {
