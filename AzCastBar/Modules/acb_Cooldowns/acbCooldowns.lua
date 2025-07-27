@@ -14,6 +14,15 @@ local extraOptions = {
 local plugin = AzCastBar:CreateMainBar("Frame","Cooldowns",extraOptions,true);
 local timers = LibTableRecycler:New();
 
+-- Spells that should never display cooldowns
+local ignoredSpells = {}
+do
+    local revivePet = GetSpellInfo(125439)
+    if revivePet then
+        ignoredSpells[revivePet] = true
+    end
+end
+
 --------------------------------------------------------------------------------------------------------
 --                                            Frame Scripts                                           --
 --------------------------------------------------------------------------------------------------------
@@ -90,14 +99,14 @@ function plugin:QueryCooldowns()
                                         texture = spellName.iconID;
                                         spellName = spellName.name;
                                 end
-                                if spellName then
+                                if spellName and not ignoredSpells[spellName] then
                                         local tbl = timers:Fetch();
                                         tbl.name = spellName;
                                         tbl.duration = duration;
                                         tbl.startTime = start;
                                         tbl.endTime = start + duration;
-                                                tbl.texture = texture;
-                                        end
+                                        tbl.texture = texture;
+                                end
                                 end
                         end
                 end
