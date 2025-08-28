@@ -44,6 +44,15 @@ local elapsed    = 0
 -- C_Spell API when the global does not exist.
 local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
 
+-- Helper: obtain empower stage duration regardless of API changes
+local function GetStageDuration(stageIndex)
+  if GetUnitEmpowerStageDuration then
+    return GetUnitEmpowerStageDuration(unit, stageIndex)
+  elseif C_Spell and C_Spell.GetSpellEmpowerStageDuration and spellID then
+    return C_Spell.GetSpellEmpowerStageDuration(spellID, stageIndex)
+  end
+end
+
 -- Helper: build stage ticks using GetUnitEmpowerStageDuration
 local function buildTicks()
   clearTicks()
@@ -51,11 +60,9 @@ local function buildTicks()
   totalDur = 0
 
   -- Blizzard exposes durations per stage; index is 1..N
-  -- GetUnitEmpowerStageDuration(unit, stage) -> duration (seconds)
-  -- (Warcraft Wiki notes this API; works for empowered casts.)
   local stageIndex = 1
   while true do
-    local d = GetUnitEmpowerStageDuration(unit, stageIndex)
+    local d = GetStageDuration(stageIndex)
     if not d or d <= 0 then break end
     stageDur[stageIndex] = d
     totalDur = totalDur + d
@@ -73,6 +80,7 @@ local function buildTicks()
     tick:SetSize(2, EmpowerBar:GetHeight())
     local x = (acc / totalDur) * EmpowerBar:GetWidth()
     tick:SetPoint("LEFT", EmpowerBar, "LEFT", x - 1, 0)
+    tick:Show()
     table.insert(EmpowerBar.ticks, tick)
   end
 end
