@@ -8,6 +8,7 @@
 
 Libs\LibTableRecycler.lua
 acbCore.lua
+EmpowerCastBar.lua
 
 ## Flight
 Modules\acb_FlightTimes\acbFlightTimes.lua
