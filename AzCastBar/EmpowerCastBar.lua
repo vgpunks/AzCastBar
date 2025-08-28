@@ -40,6 +40,10 @@ local stageDur   = {}   -- per stage seconds
 local totalDur   = 0
 local elapsed    = 0
 
+-- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
+-- C_Spell API when the global does not exist.
+local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
+
 -- Helper: build stage ticks using GetUnitEmpowerStageDuration
 local function buildTicks()
   clearTicks()
@@ -124,7 +128,9 @@ f:SetScript("OnEvent", function(_, event, unitToken, castGUID, argSpellID)
     spellID = argSpellID
     elapsed = 0
     buildTicks()
-    label:SetText((GetSpellInfo(spellID)))
+    local info = GetSpellInfo and GetSpellInfo(spellID)
+    local spellName = type(info) == "table" and info.name or info
+    label:SetText(spellName or "")
     EmpowerBar:SetMinMaxValues(0, 1)
     EmpowerBar:SetValue(0)
     EmpowerBar:Show()
