@@ -43,10 +43,14 @@ local elapsed    = 0
 -- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
 -- C_Spell API when the global does not exist.
 local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
+local C_CastingInfo = C_CastingInfo;
 
 -- Helper: obtain empower stage duration regardless of API changes
 local function GetStageDuration(stageIndex)
-  if GetUnitEmpowerStageDuration then
+  -- Newer client builds expose empower data through C_CastingInfo
+  if C_CastingInfo and C_CastingInfo.GetEmpowerStageDuration then
+    return C_CastingInfo.GetEmpowerStageDuration(unit, stageIndex)
+  elseif GetUnitEmpowerStageDuration then
     return GetUnitEmpowerStageDuration(unit, stageIndex)
   elseif C_Spell and C_Spell.GetSpellEmpowerStageDuration and spellID then
     return C_Spell.GetSpellEmpowerStageDuration(spellID, stageIndex)
@@ -61,16 +65,19 @@ local function buildTicks()
 
   local numStages
   -- Attempt to use newer API providing full empower info
-  if C_Spell and C_Spell.GetSpellEmpowerInfo and spellID then
-    local info = C_Spell.GetSpellEmpowerInfo(spellID)
-    if info and info.numStages and info.numStages > 0 then
-      numStages = info.numStages
-      if info.stageDurations then
-        for i = 1, numStages do
-          local d = info.stageDurations[i] or 0
-          stageDur[i] = d
-          totalDur = totalDur + d
-        end
+  local info
+  if C_CastingInfo and C_CastingInfo.GetSpellEmpowerInfo and spellID then
+    info = C_CastingInfo.GetSpellEmpowerInfo(spellID)
+  elseif C_Spell and C_Spell.GetSpellEmpowerInfo and spellID then
+    info = C_Spell.GetSpellEmpowerInfo(spellID)
+  end
+  if info and info.numStages and info.numStages > 0 then
+    numStages = info.numStages
+    if info.stageDurations then
+      for i = 1, numStages do
+        local d = info.stageDurations[i] or 0
+        stageDur[i] = d
+        totalDur = totalDur + d
       end
     end
   end
