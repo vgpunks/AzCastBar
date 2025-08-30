@@ -3,11 +3,42 @@ local unpack = unpack;
 local wipe = wipe;
 local GetTime = GetTime;
 local GetNetStats = GetNetStats;
-local UnitCastingInfo = UnitCastingInfo;
-local UnitChannelInfo = UnitChannelInfo;
-local UnitEmpowerStage = UnitEmpowerStage;
-local GetUnitEmpowerStageDuration = GetUnitEmpowerStageDuration;
 local C_CastingInfo = C_CastingInfo;
+
+-- Several casting APIs moved under C_CastingInfo in 11.x; provide wrappers
+local UnitCastingInfo = UnitCastingInfo or function(unit)
+       if C_CastingInfo and C_CastingInfo.GetCastingInfo then
+               local info = C_CastingInfo.GetCastingInfo(unit)
+               if info then
+                       if type(info) == "table" then
+                               return info.spellName, nil, info.iconID, info.startTimeMS, info.endTimeMS, info.isTradeSkill, info.castID, info.notInterruptible, info.spellID
+                       else
+                               return info
+                       end
+               end
+       end
+end
+
+local UnitChannelInfo = UnitChannelInfo or function(unit)
+       if C_CastingInfo and C_CastingInfo.GetChannelInfo then
+               local info = C_CastingInfo.GetChannelInfo(unit)
+               if info then
+                       if type(info) == "table" then
+                               return info.spellName, nil, info.iconID, info.startTimeMS, info.endTimeMS, info.isTradeSkill, info.notInterruptible, info.spellID, info.numStages
+                       else
+                               return info
+                       end
+               end
+       end
+end
+
+local UnitEmpowerStage = UnitEmpowerStage or function(unit)
+       if C_CastingInfo and C_CastingInfo.GetEmpowerStage then
+               return C_CastingInfo.GetEmpowerStage(unit)
+       end
+end
+
+local GetUnitEmpowerStageDuration = GetUnitEmpowerStageDuration or (C_CastingInfo and C_CastingInfo.GetEmpowerStageDuration);
 -- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
 -- C_Spell API when the global does not exist.
 local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
@@ -99,16 +130,19 @@ local function BuildStageTicks(self)
        local durations, total, numStages = {}, 0, 0
 
        -- Prefer API that returns all stage data at once
-       if C_Spell and C_Spell.GetSpellEmpowerInfo then
-               local info = C_Spell.GetSpellEmpowerInfo(self.empSpellID)
-               if info and info.numStages and info.numStages > 0 then
-                       numStages = info.numStages
-                       if info.stageDurations then
-                               for i = 1, numStages do
-                                       local d = info.stageDurations[i] or 0
-                                       durations[i] = d
-                                       total = total + d
-                               end
+       local info
+       if C_CastingInfo and C_CastingInfo.GetSpellEmpowerInfo then
+               info = C_CastingInfo.GetSpellEmpowerInfo(self.empSpellID)
+       elseif C_Spell and C_Spell.GetSpellEmpowerInfo then
+               info = C_Spell.GetSpellEmpowerInfo(self.empSpellID)
+       end
+       if info and info.numStages and info.numStages > 0 then
+               numStages = info.numStages
+               if info.stageDurations then
+                       for i = 1, numStages do
+                               local d = info.stageDurations[i] or 0
+                               durations[i] = d
+                               total = total + d
                        end
                end
        end
