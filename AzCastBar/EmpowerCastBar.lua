@@ -83,6 +83,7 @@ local function buildTicks()
       if d == nil then break end
       stageDur[stageIndex] = d
       totalDur = totalDur + (d > 0 and d or 0)
+      if d <= 0 then break end
       stageIndex = stageIndex + 1
     end
     numStages = #stageDur
