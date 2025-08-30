@@ -39,6 +39,7 @@ local spellID    = nil
 local stageDur   = {}   -- per stage seconds
 local totalDur   = 0
 local elapsed    = 0
+local MAX_STAGES = 10 -- safety to avoid infinite loops
 
 -- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
 -- C_Spell API when the global does not exist.
@@ -85,7 +86,7 @@ local function buildTicks()
   -- Fallback: query stage duration per index until API returns nil
   if not numStages then
     local stageIndex = 1
-    while true do
+    while stageIndex <= MAX_STAGES do
       local d = GetStageDuration(stageIndex)
       if d == nil then break end
       stageDur[stageIndex] = d

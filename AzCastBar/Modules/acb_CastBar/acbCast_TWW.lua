@@ -42,6 +42,7 @@ local GetUnitEmpowerStageDuration = GetUnitEmpowerStageDuration or (C_CastingInf
 -- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
 -- C_Spell API when the global does not exist.
 local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
+local MAX_EMPOWER_STAGES = 10 -- safety cap
 
 -- Extra Options
 local extraOptions = {
@@ -150,7 +151,7 @@ local function BuildStageTicks(self)
        -- Fallback to querying per stage if needed
        if numStages == 0 then
                local i = 1
-               while true do
+               while i <= MAX_EMPOWER_STAGES do
                        local dur = GetUnitEmpowerStageDuration and GetUnitEmpowerStageDuration(self.unit, i)
                        if (dur == nil or dur <= 0) and C_Spell and C_Spell.GetSpellEmpowerStageDuration then
                                dur = C_Spell.GetSpellEmpowerStageDuration(self.empSpellID, i)
