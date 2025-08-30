@@ -59,21 +59,46 @@ local function buildTicks()
   wipe(stageDur)
   totalDur = 0
 
-  -- Blizzard exposes durations per stage; index is 1..N
-  local stageIndex = 1
-  while true do
-    local d = GetStageDuration(stageIndex)
-    if not d or d <= 0 then break end
-    stageDur[stageIndex] = d
-    totalDur = totalDur + d
-    stageIndex = stageIndex + 1
+  local numStages
+  -- Attempt to use newer API providing full empower info
+  if C_Spell and C_Spell.GetSpellEmpowerInfo and spellID then
+    local info = C_Spell.GetSpellEmpowerInfo(spellID)
+    if info and info.numStages and info.numStages > 0 then
+      numStages = info.numStages
+      if info.stageDurations then
+        for i = 1, numStages do
+          local d = info.stageDurations[i] or 0
+          stageDur[i] = d
+          totalDur = totalDur + d
+        end
+      end
+    end
   end
 
-  if totalDur <= 0 then return end
+  -- Fallback: query stage duration per index until API returns nil
+  if not numStages then
+    local stageIndex = 1
+    while true do
+      local d = GetStageDuration(stageIndex)
+      if d == nil then break end
+      stageDur[stageIndex] = d
+      totalDur = totalDur + (d > 0 and d or 0)
+      stageIndex = stageIndex + 1
+    end
+    numStages = #stageDur
+  end
+
+  -- If we know stages but total duration is zero (API returned 0 for final stage),
+  -- fall back to equally spaced ticks so stage count is still represented.
+  if numStages <= 0 then return end
+  if totalDur <= 0 then
+    totalDur = numStages
+    for i = 1, numStages do stageDur[i] = 1 end
+  end
 
   -- place visual ticks at stage thresholds
   local acc = 0
-  for i = 1, #stageDur - 1 do
+  for i = 1, numStages - 1 do
     acc = acc + stageDur[i]
     local tick = EmpowerBar:CreateTexture(nil, "OVERLAY")
     tick:SetColorTexture(1, 1, 1, 0.6)
