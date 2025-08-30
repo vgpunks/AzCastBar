@@ -33,17 +33,9 @@ local UnitChannelInfo = UnitChannelInfo or function(unit)
        end
 end
 
-local UnitEmpowerStage = UnitEmpowerStage or function(unit)
-       if C_CastingInfo and C_CastingInfo.GetEmpowerStage then
-               return C_CastingInfo.GetEmpowerStage(unit)
-       end
-end
-
-local GetUnitEmpowerStageDuration = GetUnitEmpowerStageDuration or (C_CastingInfo and C_CastingInfo.GetEmpowerStageDuration);
 -- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
 -- C_Spell API when the global does not exist.
 local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
-local MAX_EMPOWER_STAGES = 10 -- safety cap
 
 -- Extra Options
 local extraOptions = {
@@ -116,83 +108,6 @@ local function OnUpdate(self,elapsed)
         else
                 self:Hide();
         end
-end
-
--- Empower stage tick marks
-local function ClearStageTicks(self)
-       if not self.stageTicks then return end
-       for _, t in pairs(self.stageTicks) do t:Hide() end
-       wipe(self.stageTicks)
-end
-
-local function BuildStageTicks(self)
-       ClearStageTicks(self)
-       if not self.empSpellID then return end
-
-       local durations, total, numStages = {}, 0, 0
-
-       -- Prefer API that returns all stage data at once
-       local info
-       if C_Spell and C_Spell.GetSpellEmpowerInfo then
-               info = C_Spell.GetSpellEmpowerInfo(self.empSpellID)
-       elseif C_CastingInfo and C_CastingInfo.GetSpellEmpowerInfo then
-               info = C_CastingInfo.GetSpellEmpowerInfo(self.empSpellID)
-       end
-       if info and info.numStages and info.numStages > 0 then
-               numStages = info.numStages
-               if info.stageDurations then
-                       for i = 1, numStages do
-                               local d = info.stageDurations[i] or 0
-                               durations[i] = d
-                               total = total + d
-                       end
-               end
-       end
-
-       -- Fallback to querying per stage if needed
-       if numStages == 0 then
-               local i = 1
-               while i <= MAX_EMPOWER_STAGES do
-                       local dur = GetUnitEmpowerStageDuration and GetUnitEmpowerStageDuration(self.unit, i)
-                       if (dur == nil or dur <= 0) and C_Spell and C_Spell.GetSpellEmpowerStageDuration then
-                               dur = C_Spell.GetSpellEmpowerStageDuration(self.empSpellID, i)
-                       end
-                       if dur == nil then break end
-                       durations[i] = dur
-                       if dur > 0 then total = total + dur end
-                       i = i + 1
-               end
-               numStages = #durations
-       end
-
-       if numStages <= 0 then return end
-
-       -- Some spells report zero duration for the final stage. Evenly space ticks in this case.
-       if total <= 0 then
-               total = numStages
-               for i = 1, numStages do durations[i] = 1 end
-       end
-
-       self.stageTicks = self.stageTicks or {}
-       local acc, tickIndex = 0, 1
-       for idx = 1, numStages - 1 do
-               acc = acc + durations[idx]
-               local pos = acc / total
-               if pos > 0 and pos < 1 then
-                       local x = pos * self.status:GetWidth()
-                       local tick = self.stageTicks[tickIndex]
-                       if not tick then
-                               tick = self.status:CreateTexture(nil, "OVERLAY")
-                               tick:SetColorTexture(1, 1, 1, 0.6)
-                               self.stageTicks[tickIndex] = tick
-                       end
-                       tick:ClearAllPoints()
-                       tick:SetSize(2, self.status:GetHeight())
-                       tick:SetPoint("LEFT", self.status, "LEFT", x - 1, 0)
-                       tick:Show()
-                       tickIndex = tickIndex + 1
-               end
-       end
 end
 
 --------------------------------------------------------------------------------------------------------
@@ -408,14 +323,12 @@ function events:UNIT_SPELLCAST_EMPOWER_START(event, unit, lineID, spellID)
 
         self.status:SetStatusBarColor(unpack(self.cfg.colNormal))
         self.icon:SetTexture(texture)
-        self.name:SetText((spell or "") .. " (Empowering)")
-       self.empSpellID = spellID
+        self.name:SetText(spell or "")
 
        self.castDelay = 0
        self.delayText = ""
 
        self:ResetAndShow(castTime, 1)
-       BuildStageTicks(self)
 end
 
 -- Empower Stage Update
@@ -432,13 +345,6 @@ function events:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, lineID, spellID)
                 self.castTime = endTime - startTime
         end
 
-       self.empSpellID = spellID or self.empSpellID
-       BuildStageTicks(self)
-
-       local stage = UnitEmpowerStage(unit)
-       if stage then
-               self.name:SetText(self.name:GetText():gsub(" %(Stage %d+%)", ""):gsub(" %(Empowering%)", "") .. " (Stage " .. stage .. ")")
-       end
 end
 -- Empower Stop
 function events:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, lineID, spellID)
@@ -454,8 +360,7 @@ function events:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, lineID, spellID)
                 self.castTime = endTime - startTime
         end
 
-       ClearStageTicks(self)
-       self.empSpellID = nil
+       self.isEmpower = nil
        self.status:SetValue(self.castTime)
        self:StartFadeOut()
 end
@@ -527,8 +432,6 @@ local function StartFadeOut(self)
                 self.isChannel = nil;
                 self.isEmpower = nil;
                 self.fadeTime = self.cfg.fadeTime;
-               ClearStageTicks(self)
-               self.empSpellID = nil
                 if (self.unit == "player") then
                         tradeCountTotal = nil;
                         self.tradeCount = nil;
