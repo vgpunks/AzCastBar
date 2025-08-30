@@ -16,133 +16,31 @@ local bd = CreateFrame("Frame", nil, EmpowerBar, "BackdropTemplate")
 bd:SetAllPoints(true)
 bd:SetBackdrop({edgeFile="Interface\\Tooltips\\UI-Tooltip-Border", edgeSize=12})
 
--- label + stage text
 local label = EmpowerBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 label:SetPoint("LEFT", EmpowerBar, "LEFT", 4, 0)
 label:SetText("Empower")
-
-local stageText = EmpowerBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-stageText:SetPoint("RIGHT", EmpowerBar, "RIGHT", -4, 0)
-stageText:SetText("")
-
--- tick container
-EmpowerBar.ticks = {}
-local function clearTicks()
-  for _, t in pairs(EmpowerBar.ticks) do t:Hide() end
-  wipe(EmpowerBar.ticks)
-end
 
 -- state
 local unit       = "player"
 local activeGUID = nil
 local spellID    = nil
-local stageDur   = {}   -- per stage seconds
-local totalDur   = 0
-local elapsed    = 0
-local MAX_STAGES = 10 -- safety to avoid infinite loops
+local startTime  = 0
+local endTime    = 0
 
 -- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
 -- C_Spell API when the global does not exist.
 local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
 local C_Spell = C_Spell;
-local C_CastingInfo = C_CastingInfo;
-
--- Helper: obtain empower stage duration regardless of API changes
-local function GetStageDuration(stageIndex)
-  if GetUnitEmpowerStageDuration then
-    return GetUnitEmpowerStageDuration(unit, stageIndex)
-  elseif C_Spell and C_Spell.GetSpellEmpowerStageDuration and spellID then
-    return C_Spell.GetSpellEmpowerStageDuration(spellID, stageIndex)
-  elseif C_CastingInfo and C_CastingInfo.GetEmpowerStageDuration then
-    return C_CastingInfo.GetEmpowerStageDuration(unit, stageIndex)
-  end
-end
-
--- Helper: build stage ticks using GetUnitEmpowerStageDuration
-local function buildTicks()
-  clearTicks()
-  wipe(stageDur)
-  totalDur = 0
-
-  local numStages
-  -- Attempt to use newer API providing full empower info
-  local info
-  if C_Spell and C_Spell.GetSpellEmpowerInfo and spellID then
-    info = C_Spell.GetSpellEmpowerInfo(spellID)
-  elseif C_CastingInfo and C_CastingInfo.GetSpellEmpowerInfo and spellID then
-    info = C_CastingInfo.GetSpellEmpowerInfo(spellID)
-  end
-  if info and info.numStages and info.numStages > 0 then
-    numStages = info.numStages
-    if info.stageDurations then
-      for i = 1, numStages do
-        local d = info.stageDurations[i] or 0
-        stageDur[i] = d
-        totalDur = totalDur + d
-      end
-    end
-  end
-
-  -- Fallback: query stage duration per index until API returns nil
-  if not numStages then
-    local stageIndex = 1
-    while stageIndex <= MAX_STAGES do
-      local d = GetStageDuration(stageIndex)
-      if d == nil then break end
-      stageDur[stageIndex] = d
-      totalDur = totalDur + (d > 0 and d or 0)
-      if d <= 0 then break end
-      stageIndex = stageIndex + 1
-    end
-    numStages = #stageDur
-  end
-
-  -- If we know stages but total duration is zero (API returned 0 for final stage),
-  -- fall back to equally spaced ticks so stage count is still represented.
-  if numStages <= 0 then return end
-  if totalDur <= 0 then
-    totalDur = numStages
-    for i = 1, numStages do stageDur[i] = 1 end
-  end
-
-  -- place visual ticks at stage thresholds
-  local acc = 0
-  for i = 1, numStages - 1 do
-    acc = acc + stageDur[i]
-    local pos = acc / totalDur
-    if pos > 0 and pos < 1 then
-      local tick = EmpowerBar:CreateTexture(nil, "OVERLAY")
-      tick:SetColorTexture(1, 1, 1, 0.6)
-      tick:SetSize(2, EmpowerBar:GetHeight())
-      tick:SetPoint("LEFT", EmpowerBar, "LEFT", pos * EmpowerBar:GetWidth() - 1, 0)
-      tick:Show()
-      table.insert(EmpowerBar.ticks, tick)
-    end
-  end
-end
-
--- compute current stage from elapsed time
-local function currentStage()
-  local sum = 0
-  for i = 1, #stageDur do
-    sum = sum + stageDur[i]
-    if elapsed < sum - 1e-6 then
-      return i
-    end
-  end
-  return #stageDur
-end
 
 -- OnUpdate drives the bar while holding
-EmpowerBar:SetScript("OnUpdate", function(self, dt)
-  elapsed = elapsed + dt
-  if totalDur > 0 then
-    local v = math.min(elapsed / totalDur, 1)
+EmpowerBar:SetScript("OnUpdate", function(self)
+  if endTime > startTime then
+    local now = GetTime()
+    local duration = endTime - startTime
+    local v = math.min((now - startTime) / duration, 1)
     self:SetValue(v)
-    stageText:SetText(("Stage %d/%d"):format(currentStage(), #stageDur))
   else
     self:SetValue(0)
-    stageText:SetText("")
   end
 end)
 
@@ -170,28 +68,35 @@ f:SetScript("OnEvent", function(_, event, unitToken, castGUID, argSpellID)
   if event == "UNIT_SPELLCAST_EMPOWER_START" then
     activeGUID = castGUID
     spellID = argSpellID
-    elapsed = 0
-    buildTicks()
     local info = GetSpellInfo and GetSpellInfo(spellID)
     local spellName = type(info) == "table" and info.name or info
     label:SetText(spellName or "")
+    local _, _, _, sTime, eTime = UnitCastingInfo(unit)
+    if not sTime then
+      _, _, _, sTime, eTime = UnitChannelInfo(unit)
+    end
+    if sTime and eTime then
+      startTime = sTime / 1000
+      endTime = eTime / 1000
+    else
+      startTime, endTime = GetTime(), GetTime()
+    end
     EmpowerBar:SetMinMaxValues(0, 1)
     EmpowerBar:SetValue(0)
     EmpowerBar:Show()
 
   elseif event == "UNIT_SPELLCAST_EMPOWER_UPDATE" then
-    -- Durations can change per spell; rebuild in case (cheap)
-    buildTicks()
+    local _, _, _, sTime, eTime = UnitChannelInfo(unit)
+    if sTime and eTime then
+      startTime = sTime / 1000
+      endTime = eTime / 1000
+    end
 
   elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" or event == "UNIT_SPELLCAST_INTERRUPTED" then
-    -- Fire the spell or cancel → hide and reset
     if castGUID == activeGUID then
       EmpowerBar:Hide()
       activeGUID, spellID = nil, nil
-      clearTicks()
-      wipe(stageDur)
-      totalDur, elapsed = 0, 0
-      stageText:SetText("")
+      startTime, endTime = 0, 0
     end
   end
 end)
