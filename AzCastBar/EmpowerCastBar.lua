@@ -28,7 +28,7 @@ stageText:SetText("")
 -- tick container
 EmpowerBar.ticks = {}
 local function clearTicks()
-  for _, t in ipairs(EmpowerBar.ticks) do t:Hide() end
+  for _, t in pairs(EmpowerBar.ticks) do t:Hide() end
   wipe(EmpowerBar.ticks)
 end
 
@@ -109,13 +109,15 @@ local function buildTicks()
   local acc = 0
   for i = 1, numStages - 1 do
     acc = acc + stageDur[i]
-    local tick = EmpowerBar:CreateTexture(nil, "OVERLAY")
-    tick:SetColorTexture(1, 1, 1, 0.6)
-    tick:SetSize(2, EmpowerBar:GetHeight())
-    local x = (acc / totalDur) * EmpowerBar:GetWidth()
-    tick:SetPoint("LEFT", EmpowerBar, "LEFT", x - 1, 0)
-    tick:Show()
-    table.insert(EmpowerBar.ticks, tick)
+    local pos = acc / totalDur
+    if pos > 0 and pos < 1 then
+      local tick = EmpowerBar:CreateTexture(nil, "OVERLAY")
+      tick:SetColorTexture(1, 1, 1, 0.6)
+      tick:SetSize(2, EmpowerBar:GetHeight())
+      tick:SetPoint("LEFT", EmpowerBar, "LEFT", pos * EmpowerBar:GetWidth() - 1, 0)
+      tick:Show()
+      table.insert(EmpowerBar.ticks, tick)
+    end
   end
 end
 

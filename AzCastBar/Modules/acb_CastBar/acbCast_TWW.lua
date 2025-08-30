@@ -121,7 +121,7 @@ end
 -- Empower stage tick marks
 local function ClearStageTicks(self)
        if not self.stageTicks then return end
-       for _, t in ipairs(self.stageTicks) do t:Hide() end
+       for _, t in pairs(self.stageTicks) do t:Hide() end
        wipe(self.stageTicks)
 end
 
@@ -174,20 +174,24 @@ local function BuildStageTicks(self)
        end
 
        self.stageTicks = self.stageTicks or {}
-       local acc = 0
+       local acc, tickIndex = 0, 1
        for idx = 1, numStages - 1 do
                acc = acc + durations[idx]
-               local x = (acc / total) * self.status:GetWidth()
-               local tick = self.stageTicks[idx]
-               if not tick then
-                       tick = self.status:CreateTexture(nil, "OVERLAY")
-                       tick:SetColorTexture(1, 1, 1, 0.6)
-                       self.stageTicks[idx] = tick
+               local pos = acc / total
+               if pos > 0 and pos < 1 then
+                       local x = pos * self.status:GetWidth()
+                       local tick = self.stageTicks[tickIndex]
+                       if not tick then
+                               tick = self.status:CreateTexture(nil, "OVERLAY")
+                               tick:SetColorTexture(1, 1, 1, 0.6)
+                               self.stageTicks[tickIndex] = tick
+                       end
+                       tick:ClearAllPoints()
+                       tick:SetSize(2, self.status:GetHeight())
+                       tick:SetPoint("LEFT", self.status, "LEFT", x - 1, 0)
+                       tick:Show()
+                       tickIndex = tickIndex + 1
                end
-               tick:ClearAllPoints()
-               tick:SetSize(2, self.status:GetHeight())
-               tick:SetPoint("LEFT", self.status, "LEFT", x - 1, 0)
-               tick:Show()
        end
 end
 
