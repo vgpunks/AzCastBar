@@ -1,10 +1,12 @@
 local min = min;
 local unpack = unpack;
+local wipe = wipe;
 local GetTime = GetTime;
 local GetNetStats = GetNetStats;
 local UnitCastingInfo = UnitCastingInfo;
 local UnitChannelInfo = UnitChannelInfo;
 local UnitEmpowerStage = UnitEmpowerStage;
+local GetUnitEmpowerStageDuration = GetUnitEmpowerStageDuration;
 local C_CastingInfo = C_CastingInfo;
 -- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
 -- C_Spell API when the global does not exist.
@@ -83,7 +85,48 @@ local function OnUpdate(self,elapsed)
         end
 end
 
--- Empower Cast Stage Marks are no longer used
+-- Empower stage tick marks
+local function ClearStageTicks(self)
+       if not self.stageTicks then return end
+       for _, t in ipairs(self.stageTicks) do t:Hide() end
+       wipe(self.stageTicks)
+end
+
+local function BuildStageTicks(self)
+       ClearStageTicks(self)
+       if not self.empSpellID then return end
+
+       local durations, total = {}, 0
+       local i = 1
+       while true do
+               local dur = GetUnitEmpowerStageDuration and GetUnitEmpowerStageDuration(self.unit, i)
+               if (not dur or dur <= 0) and C_Spell and C_Spell.GetSpellEmpowerStageDuration then
+                       dur = C_Spell.GetSpellEmpowerStageDuration(self.empSpellID, i)
+               end
+               if not dur or dur <= 0 then break end
+               durations[i] = dur
+               total = total + dur
+               i = i + 1
+       end
+       if total <= 0 then return end
+
+       self.stageTicks = self.stageTicks or {}
+       local acc = 0
+       for idx = 1, #durations - 1 do
+               acc = acc + durations[idx]
+               local x = (acc / total) * self.status:GetWidth()
+               local tick = self.stageTicks[idx]
+               if not tick then
+                       tick = self.status:CreateTexture(nil, "OVERLAY")
+                       tick:SetColorTexture(1, 1, 1, 0.6)
+                       self.stageTicks[idx] = tick
+               end
+               tick:ClearAllPoints()
+               tick:SetSize(2, self.status:GetHeight())
+               tick:SetPoint("LEFT", self.status, "LEFT", x - 1, 0)
+               tick:Show()
+       end
+end
 
 --------------------------------------------------------------------------------------------------------
 --                                           Event Handling                                           --
@@ -299,11 +342,13 @@ function events:UNIT_SPELLCAST_EMPOWER_START(event, unit, lineID, spellID)
         self.status:SetStatusBarColor(unpack(self.cfg.colNormal))
         self.icon:SetTexture(texture)
         self.name:SetText((spell or "") .. " (Empowering)")
+       self.empSpellID = spellID
 
        self.castDelay = 0
        self.delayText = ""
 
        self:ResetAndShow(castTime, 1)
+       BuildStageTicks(self)
 end
 
 -- Empower Stage Update
@@ -320,10 +365,13 @@ function events:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, lineID, spellID)
                 self.castTime = endTime - startTime
         end
 
-        local stage = UnitEmpowerStage(unit)
-        if stage then
-                self.name:SetText(self.name:GetText():gsub(" %(Stage %d+%)", ""):gsub(" %(Empowering%)", "") .. " (Stage " .. stage .. ")")
-        end
+       self.empSpellID = spellID or self.empSpellID
+       BuildStageTicks(self)
+
+       local stage = UnitEmpowerStage(unit)
+       if stage then
+               self.name:SetText(self.name:GetText():gsub(" %(Stage %d+%)", ""):gsub(" %(Empowering%)", "") .. " (Stage " .. stage .. ")")
+       end
 end
 -- Empower Stop
 function events:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, lineID, spellID)
@@ -339,8 +387,10 @@ function events:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, lineID, spellID)
                 self.castTime = endTime - startTime
         end
 
-        self.status:SetValue(self.castTime)
-        self:StartFadeOut()
+       ClearStageTicks(self)
+       self.empSpellID = nil
+       self.status:SetValue(self.castTime)
+       self:StartFadeOut()
 end
 
 
@@ -405,11 +455,13 @@ end
 
 -- Start Frame FadeOut
 local function StartFadeOut(self)
-	if (not self.fadeTime) then
-		self.isCast = nil;
-		self.isChannel = nil;
+        if (not self.fadeTime) then
+                self.isCast = nil;
+                self.isChannel = nil;
                 self.isEmpower = nil;
-		self.fadeTime = self.cfg.fadeTime;
+                self.fadeTime = self.cfg.fadeTime;
+               ClearStageTicks(self)
+               self.empSpellID = nil
                 if (self.unit == "player") then
                         tradeCountTotal = nil;
                         self.tradeCount = nil;
