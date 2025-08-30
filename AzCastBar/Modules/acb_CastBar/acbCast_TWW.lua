@@ -4,6 +4,7 @@ local wipe = wipe;
 local GetTime = GetTime;
 local GetNetStats = GetNetStats;
 local C_CastingInfo = C_CastingInfo;
+local C_Spell = C_Spell;
 
 -- Several casting APIs moved under C_CastingInfo in 11.x; provide wrappers
 local UnitCastingInfo = UnitCastingInfo or function(unit)
@@ -132,10 +133,10 @@ local function BuildStageTicks(self)
 
        -- Prefer API that returns all stage data at once
        local info
-       if C_CastingInfo and C_CastingInfo.GetSpellEmpowerInfo then
-               info = C_CastingInfo.GetSpellEmpowerInfo(self.empSpellID)
-       elseif C_Spell and C_Spell.GetSpellEmpowerInfo then
+       if C_Spell and C_Spell.GetSpellEmpowerInfo then
                info = C_Spell.GetSpellEmpowerInfo(self.empSpellID)
+       elseif C_CastingInfo and C_CastingInfo.GetSpellEmpowerInfo then
+               info = C_CastingInfo.GetSpellEmpowerInfo(self.empSpellID)
        end
        if info and info.numStages and info.numStages > 0 then
                numStages = info.numStages
