@@ -96,23 +96,50 @@ local function BuildStageTicks(self)
        ClearStageTicks(self)
        if not self.empSpellID then return end
 
-       local durations, total = {}, 0
-       local i = 1
-       while true do
-               local dur = GetUnitEmpowerStageDuration and GetUnitEmpowerStageDuration(self.unit, i)
-               if (not dur or dur <= 0) and C_Spell and C_Spell.GetSpellEmpowerStageDuration then
-                       dur = C_Spell.GetSpellEmpowerStageDuration(self.empSpellID, i)
+       local durations, total, numStages = {}, 0, 0
+
+       -- Prefer API that returns all stage data at once
+       if C_Spell and C_Spell.GetSpellEmpowerInfo then
+               local info = C_Spell.GetSpellEmpowerInfo(self.empSpellID)
+               if info and info.numStages and info.numStages > 0 then
+                       numStages = info.numStages
+                       if info.stageDurations then
+                               for i = 1, numStages do
+                                       local d = info.stageDurations[i] or 0
+                                       durations[i] = d
+                                       total = total + d
+                               end
+                       end
                end
-               if not dur or dur <= 0 then break end
-               durations[i] = dur
-               total = total + dur
-               i = i + 1
        end
-       if total <= 0 then return end
+
+       -- Fallback to querying per stage if needed
+       if numStages == 0 then
+               local i = 1
+               while true do
+                       local dur = GetUnitEmpowerStageDuration and GetUnitEmpowerStageDuration(self.unit, i)
+                       if (dur == nil or dur <= 0) and C_Spell and C_Spell.GetSpellEmpowerStageDuration then
+                               dur = C_Spell.GetSpellEmpowerStageDuration(self.empSpellID, i)
+                       end
+                       if dur == nil then break end
+                       durations[i] = dur
+                       if dur > 0 then total = total + dur end
+                       i = i + 1
+               end
+               numStages = #durations
+       end
+
+       if numStages <= 0 then return end
+
+       -- Some spells report zero duration for the final stage. Evenly space ticks in this case.
+       if total <= 0 then
+               total = numStages
+               for i = 1, numStages do durations[i] = 1 end
+       end
 
        self.stageTicks = self.stageTicks or {}
        local acc = 0
-       for idx = 1, #durations - 1 do
+       for idx = 1, numStages - 1 do
                acc = acc + durations[idx]
                local x = (acc / total) * self.status:GetWidth()
                local tick = self.stageTicks[idx]
