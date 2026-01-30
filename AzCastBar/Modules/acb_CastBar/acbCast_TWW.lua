@@ -60,30 +60,37 @@ local function NormalizeSpellData(spell, texture)
 end
 
 -- Several casting APIs moved under C_CastingInfo in 11.x; provide wrappers
-local UnitCastingInfo = UnitCastingInfo or function(unit)
-       if C_CastingInfo and C_CastingInfo.GetCastingInfo then
-               local info = C_CastingInfo.GetCastingInfo(unit)
-               if info then
-                       if type(info) == "table" then
-                               return info.spellName, nil, info.iconID, info.startTimeMS, info.endTimeMS, info.isTradeSkill, info.castID, info.notInterruptible, info.spellID
-                       else
-                               return info
-                       end
-               end
-       end
+local BaseUnitCastingInfo = UnitCastingInfo;
+local BaseUnitChannelInfo = UnitChannelInfo;
+
+local function UnitCastingInfo(unit)
+	if C_CastingInfo and C_CastingInfo.GetCastingInfo then
+		local info = C_CastingInfo.GetCastingInfo(unit);
+		if info then
+			if type(info) == "table" then
+				return info.spellName or info.name, nil, info.iconID or info.icon, info.startTimeMS or info.startTimeMs, info.endTimeMS or info.endTimeMs, info.isTradeSkill, info.castID, info.notInterruptible, info.spellID;
+			end
+			return info;
+		end
+	end
+	if BaseUnitCastingInfo then
+		return BaseUnitCastingInfo(unit);
+	end
 end
 
-local UnitChannelInfo = UnitChannelInfo or function(unit)
-       if C_CastingInfo and C_CastingInfo.GetChannelInfo then
-               local info = C_CastingInfo.GetChannelInfo(unit)
-               if info then
-                       if type(info) == "table" then
-                               return info.spellName, nil, info.iconID, info.startTimeMS, info.endTimeMS, info.isTradeSkill, info.notInterruptible, info.spellID, info.numStages
-                       else
-                               return info
-                       end
-               end
-       end
+local function UnitChannelInfo(unit)
+	if C_CastingInfo and C_CastingInfo.GetChannelInfo then
+		local info = C_CastingInfo.GetChannelInfo(unit);
+		if info then
+			if type(info) == "table" then
+				return info.spellName or info.name, nil, info.iconID or info.icon, info.startTimeMS or info.startTimeMs, info.endTimeMS or info.endTimeMs, info.isTradeSkill, info.notInterruptible, info.spellID, info.numStages;
+			end
+			return info;
+		end
+	end
+	if BaseUnitChannelInfo then
+		return BaseUnitChannelInfo(unit);
+	end
 end
 
 -- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
