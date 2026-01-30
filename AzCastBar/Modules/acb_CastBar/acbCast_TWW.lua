@@ -7,11 +7,24 @@ local C_CastingInfo = C_CastingInfo;
 local C_Spell = C_Spell;
 
 local function SafeTimeMs(value)
-	if (type(value) == "number") then
-		return value;
+	if (value == nil) then
+		return nil;
 	end
-	if (type(value) == "string") then
+	local valueType = type(value);
+	if (valueType == "number") then
+		local ok = pcall(function()
+			return value + 0;
+		end);
+		if (ok) then
+			return value;
+		end
+	end
+	if (valueType == "string") then
 		return tonumber(value);
+	end
+	local ok, asString = pcall(tostring, value);
+	if (ok) then
+		return tonumber(asString);
 	end
 	return nil;
 end
