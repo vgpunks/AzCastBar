@@ -6,6 +6,16 @@ local GetNetStats = GetNetStats;
 local C_CastingInfo = C_CastingInfo;
 local C_Spell = C_Spell;
 
+local function SafeTimeMs(value)
+	if (type(value) == "number") then
+		return value;
+	end
+	if (type(value) == "string") then
+		return tonumber(value);
+	end
+	return nil;
+end
+
 local function GetSpellNameAndIcon(spellID)
 	if not spellID then
 		return nil, nil;
@@ -212,6 +222,11 @@ function events:UNIT_SPELLCAST_START(event,unit,lineID,spellID)
 		spell = spell or resolvedSpell;
 		texture = texture or resolvedTexture;
 	end
+	startTime = SafeTimeMs(startTime);
+	endTime = SafeTimeMs(endTime);
+	if (not startTime) or (not endTime) then
+		return;
+	end
 	startTime = (startTime / 1000);
 	endTime = (endTime / 1000);
 	local castTime = (endTime - startTime);
@@ -325,6 +340,8 @@ end
 function events:UNIT_SPELLCAST_DELAYED(event,unit,lineID,spellID)
 	local castInfoFunc = (event == "UNIT_SPELLCAST_DELAYED" and UnitCastingInfo or UnitChannelInfo);
 	local _, _, _, startTimeNew, endTimeNew = castInfoFunc(self.unit);	-- [18.07.19] 8.0/BfA: UnitCastingInfo/UnitChannelInfo "dropped second parameter (nameSubtext)"
+	startTimeNew = SafeTimeMs(startTimeNew);
+	endTimeNew = SafeTimeMs(endTimeNew);
 	if (startTimeNew and endTimeNew) then
 		local endTimeOld = self.endTime;
 		self.startTime, self.endTime = (startTimeNew / 1000), (endTimeNew / 1000);
@@ -343,6 +360,8 @@ function events:UNIT_SPELLCAST_EMPOWER_START(event, unit, lineID, spellID)
         if not startTime then
                 spell, _, texture, startTime, endTime = UnitChannelInfo(unit)
         end
+        startTime = SafeTimeMs(startTime)
+        endTime = SafeTimeMs(endTime)
         if not startTime or not endTime then
                 spell, _, texture = GetSpellInfo(spellID)
                 return
@@ -376,6 +395,8 @@ function events:UNIT_SPELLCAST_EMPOWER_UPDATE(event, unit, lineID, spellID)
 
         -- Refresh timing using channel info so the bar progresses correctly
         local _, _, _, startTime, endTime = UnitChannelInfo(unit)
+        startTime = SafeTimeMs(startTime)
+        endTime = SafeTimeMs(endTime)
         if startTime and endTime then
                 startTime = startTime / 1000
                 endTime = endTime / 1000
@@ -391,6 +412,8 @@ function events:UNIT_SPELLCAST_EMPOWER_STOP(event, unit, lineID, spellID)
 
         -- Final update to ensure timing is correct when release happens
         local _, _, _, startTime, endTime = UnitChannelInfo(unit)
+        startTime = SafeTimeMs(startTime)
+        endTime = SafeTimeMs(endTime)
         if startTime and endTime then
                 startTime = startTime / 1000
                 endTime = endTime / 1000
