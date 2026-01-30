@@ -50,9 +50,12 @@ local updateInterval = 1 / 60;
 
 -- Debuff Colors
 local DebuffColors = {};
-for type, color in next, DebuffTypeColor do
-	DebuffColors[type] = { color.r, color.g, color.b };
+if (DebuffTypeColor) then
+	for type, color in next, DebuffTypeColor do
+		DebuffColors[type] = { color.r, color.g, color.b };
+	end
 end
+DebuffColors["none"] = DebuffColors["none"] or { 1, 0, 0 };
 
 -- Az: Tanking buff test!
 --local vengeance = 76691;
