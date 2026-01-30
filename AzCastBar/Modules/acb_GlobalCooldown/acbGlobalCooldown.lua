@@ -46,7 +46,7 @@ local function OnEvent(self,event,unit,castGUID,spellID)
 	-- NOTE: If a spell is cast right after /stopcasting, GetSpellCooldown() returns zero (must be a bug)
 	elseif (event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_SUCCEEDED") then
 		local cooldown = C_Spell.GetSpellCooldown(spellID)
-		startTime, duration = cooldown.startTime, cooldown.duration
+		local startTime, duration = cooldown.startTime, cooldown.duration
 		--local startTime, duration = C_Spell.GetSpellCooldown(spellID);
 		if (duration) and (duration > 0) and (duration <= GLOBAL_COOLDOWN_TIME) then
 			self.duration = duration;
