@@ -6,6 +6,36 @@ local GetNetStats = GetNetStats;
 local C_CastingInfo = C_CastingInfo;
 local C_Spell = C_Spell;
 
+local function GetSpellNameAndIcon(spellID)
+	if not spellID then
+		return nil, nil;
+	end
+	if (C_Spell and C_Spell.GetSpellInfo) then
+		local info = C_Spell.GetSpellInfo(spellID);
+		if (type(info) == "table") then
+			return info.name, info.iconID;
+		end
+		if (info) then
+			return info, nil;
+		end
+	end
+	if (GetSpellInfo) then
+		local name, _, icon = GetSpellInfo(spellID);
+		if (type(name) == "table") then
+			return name.name, name.iconID;
+		end
+		return name, icon;
+	end
+	return nil, nil;
+end
+
+local function NormalizeSpellData(spell, texture)
+	if (type(spell) == "table") then
+		return spell.name, spell.iconID or texture;
+	end
+	return spell, texture;
+end
+
 -- Several casting APIs moved under C_CastingInfo in 11.x; provide wrappers
 local UnitCastingInfo = UnitCastingInfo or function(unit)
        if C_CastingInfo and C_CastingInfo.GetCastingInfo then
@@ -79,8 +109,8 @@ local registered_events = {
 --};
 
 -- Spell Names for Hearthstone & Astral Recall
-local astral = C_Spell.GetSpellInfo(556);
-local hearth = C_Spell.GetSpellInfo(8690);
+local astral = select(1, GetSpellNameAndIcon(556));
+local hearth = select(1, GetSpellNameAndIcon(8690));
 
 -- Trade Hook
 local tradeCountTotal, allowTradeMerge;
@@ -163,15 +193,24 @@ function events:UNIT_SPELLCAST_START(event,unit,lineID,spellID)
        -- Initialise
 	local isCast = (event == "UNIT_SPELLCAST_START");
 	local isChannel = (event == "UNIT_SPELLCAST_CHANNEL_START");
-	local spell, _, texture, startTime, endTime, isTrade, nonInterruptible;
-	local subText = spellID and C_Spell.GetSpellSubtext(spellID) or ""
+	local spell, _, texture, startTime, endTime, isTrade, nonInterruptible, infoSpellID;
+	local subText = spellID and C_Spell and C_Spell.GetSpellSubtext and C_Spell.GetSpellSubtext(spellID) or ""
 	if (isCast) then
-		spell, _, texture, startTime, endTime, isTrade, lineID, nonInterruptible = UnitCastingInfo(unit);	-- 8 returns, lineID is reused from args
+		spell, _, texture, startTime, endTime, isTrade, lineID, nonInterruptible, infoSpellID = UnitCastingInfo(unit);	-- 8 returns, lineID is reused from args
 	else
-		spell, _, texture, startTime, endTime, isTrade, nonInterruptible = UnitChannelInfo(unit);			-- 7 returns
+		spell, _, texture, startTime, endTime, isTrade, nonInterruptible, infoSpellID = UnitChannelInfo(unit);			-- 7 returns
+	end
+	if (not spellID) and (infoSpellID) then
+		spellID = infoSpellID;
 	end
 	if (not startTime) then
 		return;
+	end
+	spell, texture = NormalizeSpellData(spell, texture);
+	if (not spell or not texture) and (spellID) then
+		local resolvedSpell, resolvedTexture = GetSpellNameAndIcon(spellID);
+		spell = spell or resolvedSpell;
+		texture = texture or resolvedTexture;
 	end
 	startTime = (startTime / 1000);
 	endTime = (endTime / 1000);
@@ -229,7 +268,7 @@ function events:UNIT_SPELLCAST_START(event,unit,lineID,spellID)
 	if (self.unit == "player" and self.cfg.showSpellTarget and self.spellTarget and self.spellTarget ~= "") then
 		spell = spell.." -> "..self.spellTarget;
 	end
-	self.name:SetText(spell);
+	self.name:SetText(spell or "");
 --]]
 
 	-- Copy vars into self

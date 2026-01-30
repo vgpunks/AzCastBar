@@ -4,6 +4,8 @@ end
 
 local GetTime = GetTime;
 local UnitAura = UnitAura;
+local C_Spell = C_Spell;
+local GetSpellInfo = GetSpellInfo;
 
 local LWE = LibWeaponEnchant;
 
@@ -34,18 +36,31 @@ local uToken = "player";
 local timers = LibTableRecycler:New();
 
 -- Spell Names
-local maelstrom = GetSpellInfo(53817);
-local spiritWolves, _, spiritWolvesIcon = GetSpellInfo(51533);
-local bloodlust = GetSpellInfo(UnitFactionGroup("player") == FACTION_ALLIANCE and 32182 or 2825);
-local elemastery = GetSpellInfo(16166);
+local function GetSpellInfoCompat(spellID)
+	if (C_Spell and C_Spell.GetSpellInfo) then
+		local info = C_Spell.GetSpellInfo(spellID);
+		if (type(info) == "table") then
+			return info.name, nil, info.iconID;
+		end
+	end
+	if (GetSpellInfo) then
+		return GetSpellInfo(spellID);
+	end
+	return nil, nil, nil;
+end
+
+local maelstrom = GetSpellInfoCompat(53817);
+local spiritWolves, _, spiritWolvesIcon = GetSpellInfoCompat(51533);
+local bloodlust = GetSpellInfoCompat(UnitFactionGroup("player") == FACTION_ALLIANCE and 32182 or 2825);
+local elemastery = GetSpellInfoCompat(16166);
 local elementalShields = {
 --	[GetSpellInfo(324)] = true,		-- Lightning
 --	[GetSpellInfo(52127)] = true,	-- Water
 --	[GetSpellInfo(974)] = true,		-- Earth
 
-	[GetSpellInfo(8788)] = true,		-- Lightning
-	[GetSpellInfo(34827)] = true,	-- Water
-	[GetSpellInfo(379)] = true,		-- Earth
+	[GetSpellInfoCompat(8788)] = true,		-- Lightning
+	[GetSpellInfoCompat(34827)] = true,	-- Water
+	[GetSpellInfoCompat(379)] = true,		-- Earth
 
 --	[GetSpellInfo("Lightning Shield")] = true,		-- Lightning
 --	[GetSpellInfo("Water Shield")] = true,	-- Water

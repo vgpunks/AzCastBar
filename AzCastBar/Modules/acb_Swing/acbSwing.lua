@@ -28,6 +28,14 @@ local slamId = 1464;
 -- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
 -- C_Spell API when the global does not exist.
 local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
+
+local function GetSpellName(spellID, fallback)
+	local info = GetSpellInfo and GetSpellInfo(spellID);
+	if (type(info) == "table") then
+		return info.name or fallback;
+	end
+	return info or fallback;
+end
 --local autoShotId = 75;
 --local autoShot = GetSpellInfo(autoShotId);
 --local wandShotId = 5019;
@@ -47,11 +55,11 @@ local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
 --	[5019] = C_Spell.GetSpellInfo(5019),		-- wand
 --}
 
-local slam = GetSpellInfo(slamId) or { name = "Slam" }
-local meleeSwing = GetSpellInfo(6603) or { name = "Melee" }
+local slam = GetSpellName(slamId, "Slam");
+local meleeSwing = GetSpellName(6603, "Melee");
 local autoShotSpells = {
-        [75] = GetSpellInfo(75) or { name = "Auto Shot" },
-        [5019] = GetSpellInfo(5019) or { name = "Shoot" },
+        [75] = GetSpellName(75, "Auto Shot"),
+        [5019] = GetSpellName(5019, "Shoot"),
 }
 
 --------------------------------------------------------------------------------------------------------
@@ -64,7 +72,7 @@ function plugin:OnCombatEvent(timestamp,event,hideCaster,sourceGUID,sourceName,s
 	if (sourceGUID == playerGUID) then
 		local prefix, suffix = event:match(COMBAT_EVENT_PREFIX_SUFFIX);
 		if (prefix == "SWING") then
-			self:StartSwing(UnitAttackSpeed("player"), meleeSwing.name or "Swing")
+			self:StartSwing(UnitAttackSpeed("player"), meleeSwing or "Swing")
 			--self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
 		end
 	-- Something Happens to our Player
@@ -91,9 +99,9 @@ end
 -- Spell Cast Succeeded
 function plugin:UNIT_SPELLCAST_SUCCEEDED(event,unit,castGUID,spellId)
 if (unit == "player") then
-	local autoShotInfo = autoShotSpells[spellId];
-if (autoShotInfo) then
-	self:StartSwing(UnitAttackSpeed("player"), autoShotInfo.name or "Auto");
+	local autoShotName = autoShotSpells[spellId];
+if (autoShotName) then
+	self:StartSwing(UnitAttackSpeed("player"), autoShotName or "Auto");
 elseif (spellId == slamId) and (self.slamStart) then
 	self.startTime = (self.startTime + GetTime() - self.slamStart);
 self.slamStart = nil;
