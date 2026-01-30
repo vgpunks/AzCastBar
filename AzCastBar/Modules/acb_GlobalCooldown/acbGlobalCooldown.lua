@@ -14,6 +14,17 @@ local plugin = AzCastBar:CreateMainBar("Frame","GlobalCooldown",extraOptions);
 
 local GLOBAL_COOLDOWN_TIME = 1.5;
 
+local function ToNumber(value)
+	if (value == nil) then
+		return nil;
+	end
+	local ok, number = pcall(tonumber, value);
+	if (ok) then
+		return number;
+	end
+	return nil;
+end
+
 --------------------------------------------------------------------------------------------------------
 --                                            Frame Scripts                                           --
 --------------------------------------------------------------------------------------------------------
@@ -46,11 +57,14 @@ local function OnEvent(self,event,unit,castGUID,spellID)
 	-- NOTE: If a spell is cast right after /stopcasting, GetSpellCooldown() returns zero (must be a bug)
 	elseif (event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_SUCCEEDED") then
 		local cooldown = C_Spell.GetSpellCooldown(spellID)
-		local startTime, duration = cooldown.startTime, cooldown.duration
-		if (type(startTime) ~= "number") or (type(duration) ~= "number") then
-			startTime, duration = GetSpellCooldown(spellID);
+		local startTime = ToNumber(cooldown.startTime)
+		local duration = ToNumber(cooldown.duration)
+		if (not startTime) or (not duration) then
+			local fallbackStart, fallbackDuration = GetSpellCooldown(spellID);
+			startTime = ToNumber(fallbackStart) or startTime;
+			duration = ToNumber(fallbackDuration) or duration;
 		end
-		if (type(startTime) == "number") and (type(duration) == "number") and (duration > 0) and (duration <= GLOBAL_COOLDOWN_TIME) then
+		if (startTime and duration) and (duration > 0) and (duration <= GLOBAL_COOLDOWN_TIME) then
 			self.duration = duration;
 			self.endTime = (startTime + duration);
 			self.icon:SetTexture(C_Spell.GetSpellTexture(spellID) or "Interface\\Icons\\INV_Misc_PocketWatch_02");
