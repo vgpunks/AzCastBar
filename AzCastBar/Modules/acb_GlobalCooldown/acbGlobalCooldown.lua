@@ -47,8 +47,10 @@ local function OnEvent(self,event,unit,castGUID,spellID)
 	elseif (event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_SUCCEEDED") then
 		local cooldown = C_Spell.GetSpellCooldown(spellID)
 		local startTime, duration = cooldown.startTime, cooldown.duration
-		--local startTime, duration = C_Spell.GetSpellCooldown(spellID);
-		if (duration) and (duration > 0) and (duration <= GLOBAL_COOLDOWN_TIME) then
+		if (type(startTime) ~= "number") or (type(duration) ~= "number") then
+			startTime, duration = GetSpellCooldown(spellID);
+		end
+		if (type(startTime) == "number") and (type(duration) == "number") and (duration > 0) and (duration <= GLOBAL_COOLDOWN_TIME) then
 			self.duration = duration;
 			self.endTime = (startTime + duration);
 			self.icon:SetTexture(C_Spell.GetSpellTexture(spellID) or "Interface\\Icons\\INV_Misc_PocketWatch_02");
