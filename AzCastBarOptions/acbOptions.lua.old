@@ -1,5 +1,5 @@
 local modName = "AzCastBar";
-local f = CreateFrame("Frame",modName.."Options",UIParent, BackdropTemplateMixin and "BackdropTemplate");
+local f = CreateFrame("Frame",modName.."Options",UIParent,BackdropTemplateMixin and "BackdropTemplate");	-- 9.0.1: Using BackdropTemplate
 local acb = AzCastBar;
 
 -- Config
@@ -19,7 +19,6 @@ local DROPDOWN_LABEL_ALIGNMENT = {
 local DROPDOWN_FONT_FLAGS = {
 	["|cffffa0a0None"] = "",
 	["Outline"] = "OUTLINE",
-	["Outline Monochrome"] = "OUTLINEMONOCHROME",
 	["Thick Outline"] = "THICKOUTLINE",
 };
 
@@ -41,7 +40,7 @@ local options = {
 		{ type = "Check", var = "showLabel", label = "Show Name Label", tip = "Display the name label on the bar" },
 		{ type = "DropDown", var = "nameFontFace", label = "Font Face", media = "font", y = 38 },
 		{ type = "DropDown", var = "nameFontFlags", label = "Font Flags", list = DROPDOWN_FONT_FLAGS },
-		{ type = "Slider", var = "nameFontSize", label = "Font Size", min = 4, max = 30, step = 1 },
+		{ type = "Slider", var = "nameFontSize", label = "Font Size", min = 4, max = 29, step = 1 },
 		{ type = "DropDown", var = "nameLabelAlign", label = "Name Label Alignment", list = DROPDOWN_LABEL_ALIGNMENT, y = 16 },
 		{ type = "Color", var = "colNameLabel", label = "Name Label Color", y = 12 },
 		{ type = "Slider", var = "nameOffsetX", label = "Name Label Offset X", min = -300, max = 300, step = 1 },
@@ -53,7 +52,7 @@ local options = {
 		{ type = "Check", var = "showTotalTime", label = "Show Total Duration", tip = "Show the total time of the cast" },
 		{ type = "DropDown", var = "timeFontFace", label = "Font Face", media = "font", y = 16 },
 		{ type = "DropDown", var = "timeFontFlags", label = "Font Flags", list = DROPDOWN_FONT_FLAGS },
-		{ type = "Slider", var = "timeFontSize", label = "Font Size", min = 4, max = 30, step = 1 },
+		{ type = "Slider", var = "timeFontSize", label = "Font Size", min = 4, max = 29, step = 1 },
 		{ type = "DropDown", var = "timeLabelAlign", label = "Time Label Alignment", list = DROPDOWN_LABEL_ALIGNMENT, y = 16 },
 		{ type = "Color", var = "colTimeLabel", label = "Time Label Color", y = 12 },
 		{ type = "Slider", var = "timeOffsetX", label = "Time Label Offset X", min = -300, max = 300, step = 1 },
@@ -88,7 +87,7 @@ local options = {
 		[0] = "Anchors",
 		{ type = "DropDown", var = "anchorPoint", label = "Anchor Direction", list = { Upwards = "TOP", Downwards = "BOTTOM", Left = "LEFT", Right = "RIGHT" } },
 		{ type = "Slider", var = "anchorOffset", label = "Anchor Offset", min = -40, max = 40, step = 1 },
-		{ type = "DropDown", var = "iconAnchor", label = "Icon Anchor", list = { Left = "LEFT", Right = "RIGHT", Top = "TOP", Bottom = "BOTTOM", ["|cffffa0a0None"] = "NONE" }, y = 34 },
+		{ type = "DropDown", var = "iconAnchor", label = "Icon Anchor", list = { Left = "LEFT", Right = "RIGHT", ["|cffffa0a0None"] = "NONE" }, y = 34 },
 		{ type = "Slider", var = "iconOffset", label = "Icon Offset", min = 0, max = 20, step = 0.5 },
 		{ type = "Check", var = "hideIconBorder", label = "Hide Icon Border", tip = "Do not display the border around spell icons" },
 	},
@@ -217,14 +216,14 @@ f:SetClampedToScreen(true);
 f:SetScript("OnShow",function() if (#acb.frames > 0) then UpdatePluginList(); BuildSubCategoryList(); UpdateCategoryList(); f:BuildCategoryPage(); f:SetScript("OnShow",nil); end end);
 f:Hide();
 
-f.outline = CreateFrame("Frame",nil,f, BackdropTemplateMixin and "BackdropTemplate");
+f.outline = CreateFrame("Frame",nil,f,BackdropTemplateMixin and "BackdropTemplate");	-- 9.0.1: Using BackdropTemplate
 f.outline:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } });
 f.outline:SetBackdropColor(0.1,0.1,0.2,1);
 f.outline:SetBackdropBorderColor(0.8,0.8,0.9,0.4);
 f.outline:SetPoint("TOPLEFT",12,-12);
 f.outline:SetWidth(120);
 
-f.outline2 = CreateFrame("Frame",nil,f, BackdropTemplateMixin and "BackdropTemplate");
+f.outline2 = CreateFrame("Frame",nil,f,BackdropTemplateMixin and "BackdropTemplate");	-- 9.0.1: Using BackdropTemplate
 f.outline2:SetBackdrop(f.outline:GetBackdrop());
 f.outline2:SetBackdropColor(0.1,0.1,0.2,1);
 f.outline2:SetBackdropBorderColor(0.8,0.8,0.9,0.4);
@@ -272,20 +271,20 @@ local function Profiles_OnClick()
 	end
 end
 
-f.btnClose = CreateFrame("Button",nil,f,"UIPanelButtonTemplate", BackdropTemplateMixin and "BackdropTemplate");
+f.btnClose = CreateFrame("Button",nil,f,"UIPanelButtonTemplate");
 f.btnClose:SetSize(68,24);
 f.btnClose:SetPoint("BOTTOMRIGHT",-15,15);
 --f.btnClose:SetScript("OnClick",function() f:Hide(); f.profilesFrame:Hide(); end);
 f.btnClose:SetScript("OnClick",function() f:Hide(); end);
 f.btnClose:SetText("Close");
 
-f.btnReset = CreateFrame("Button",nil,f,"UIPanelButtonTemplate", BackdropTemplateMixin and "BackdropTemplate");
+f.btnReset = CreateFrame("Button",nil,f,"UIPanelButtonTemplate");
 f.btnReset:SetSize(68,24);
 f.btnReset:SetPoint("RIGHT",f.btnClose,"LEFT",-4,0);
 f.btnReset:SetScript("OnClick",Reset_OnClick);
 f.btnReset:SetText("Reset");
 
-f.btnProfiles = CreateFrame("Button",nil,f,"UIPanelButtonTemplate", BackdropTemplateMixin and "BackdropTemplate");
+f.btnProfiles = CreateFrame("Button",nil,f,"UIPanelButtonTemplate");
 f.btnProfiles:SetSize(68,24);
 f.btnProfiles:SetPoint("RIGHT",f.btnReset,"LEFT",-4,0);
 f.btnProfiles:SetScript("OnClick",Profiles_OnClick);
@@ -321,7 +320,7 @@ end
 -- Plugins
 f.plugins = {};
 for i = 1, 12 do
-	local b = CreateFrame("Button",nil,f.outline, BackdropTemplateMixin and "BackdropTemplate");
+	local b = CreateFrame("Button",nil,f.outline);
 	b:SetHeight(ITEM_HEIGHT);
 	b:SetScript("OnClick",PluginButton_OnClick);
 	b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight");
@@ -339,7 +338,7 @@ for i = 1, 12 do
 	f.plugins[i] = b;
 end
 
-f.scroll = CreateFrame("ScrollFrame","AzCastBarPluginsScroll",f.outline,"FauxScrollFrameTemplate", BackdropTemplateMixin and "BackdropTemplate");
+f.scroll = CreateFrame("ScrollFrame","AzCastBarPluginsScroll",f.outline,"FauxScrollFrameTemplate");
 f.scroll:SetPoint("TOPLEFT",f.plugins[1]);
 f.scroll:SetPoint("BOTTOMRIGHT",f.plugins[#f.plugins],-6,-1);
 f.scroll:SetScript("OnVerticalScroll",function(self,offset) FauxScrollFrame_OnVerticalScroll(self,offset,ITEM_HEIGHT,UpdatePluginList) end);
@@ -349,7 +348,7 @@ f.outline:SetHeight(#f.plugins * ITEM_HEIGHT + 12);
 -- Categories
 f.categories = {};
 for i = 1, 8 do
-	local b = CreateFrame("Button",nil,f.outline2, BackdropTemplateMixin and "BackdropTemplate");
+	local b = CreateFrame("Button",nil,f.outline2);
 	b:SetHeight(ITEM_HEIGHT);
 	b:SetScript("OnClick",CategoryButton_OnClick);
 	b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight");
@@ -368,7 +367,7 @@ for i = 1, 8 do
 	f.categories[i] = b;
 end
 
-f.scroll2 = CreateFrame("ScrollFrame","AzCastBarCategoryScroll",f.outline2,"FauxScrollFrameTemplate", BackdropTemplateMixin and "BackdropTemplate");
+f.scroll2 = CreateFrame("ScrollFrame","AzCastBarCategoryScroll",f.outline2,"FauxScrollFrameTemplate");
 f.scroll2:SetPoint("TOPLEFT",f.categories[1]);
 f.scroll2:SetPoint("BOTTOMRIGHT",f.categories[#f.categories],-6,-1);
 f.scroll2:SetScript("OnVerticalScroll",function(self,offset) FauxScrollFrame_OnVerticalScroll(self,offset,ITEM_HEIGHT,UpdateCategoryList) end);
@@ -442,7 +441,7 @@ local function EditMode_OnClick(self,button)
 end
 
 -- Edit Mode CheckButton
-f.editMode = CreateFrame("CheckButton",nil,f,"UICheckButtonTemplate", BackdropTemplateMixin and "BackdropTemplate");
+f.editMode = CreateFrame("CheckButton",nil,f,"UICheckButtonTemplate");
 f.editMode:SetSize(26,26);
 f.editMode:SetScript("OnEnter",nil);
 f.editMode:SetScript("OnLeave",nil);

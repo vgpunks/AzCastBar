@@ -280,32 +280,97 @@ local CPF = ColorPickerFrame;
 
 -- Color Picker Function -- if "prevVal" is valid, then its called as cancel function
 local function ColorButton_ColorPickerFunc(prevVal)
-local r, g, b, a
-if (prevVal and prevVal.GetRGBA) then
-	r, g, b, a = prevVal:GetRGBA()
-	else
-       r, g, b = CPF:GetColorRGB()
-       a = 1 - (CPF.opacity or 0)
-		end
+	local r, g, b, a;
 
-		-- Update frame only if it's still showing this option
-		if (cpfState.frame.option == cpfState.option) then
-			cpfState.frame.texture:SetVertexColor(r, g, b, a)
-			cpfState.frame.color:SetRGBA(r, g, b, a)
+	-- NOTE: In modern ColorPickerFrame, the callback arg can be:
+	--  * a Color object (classic)
+	--  * a table {r,g,b,a} or {r=,g=,b=,a=} (new)
+	--  * a NUMBER (opacity slider value)
+	-- We follow the old AzCastBar (v24) semantics where "opacity" == (1 - alpha).
+
+	-- 1) Cancel restore table / color object
+	if (prevVal) then
+		-- Color object
+		if (type(prevVal) == "table" and type(prevVal.GetRGBA) == "function") then
+			local ok, rr, gg, bb, aa = pcall(prevVal.GetRGBA, prevVal);
+			if (ok) and (type(rr) == "number") then
+				r, g, b, a = rr, gg, bb, aa;
 			end
+		-- New restore table
+		elseif (type(prevVal) == "table") then
+			r = prevVal.r or prevVal[1];
+			g = prevVal.g or prevVal[2];
+			b = prevVal.b or prevVal[3];
+			a = prevVal.a or prevVal[4];
+			-- Some variants store alpha as "opacity" (meaning alpha) or "opacity" (meaning 1-alpha).
+			-- If only opacity is present, assume v24 semantics: opacity = 1 - alpha.
+			if (type(a) ~= "number") and (type(prevVal.opacity) == "number") then
+				a = 1 - prevVal.opacity;
+			end
+		-- Opacity slider callback (value)
+		elseif (type(prevVal) == "number") then
+			r, g, b = CPF:GetColorRGB();
+			a = 1 - prevVal;
+		end
+	end
 
-			-- Update color setting
-			if (cpfState.option.subType == 2) then
-				local hexColorMarkup = format("|c%.2x%.2x%.2x%.2x", a * 255, r * 255, g * 255, b * 255)
-				cpfState.factory:SetConfigValue(cpfState.option.var, hexColorMarkup)
-				else
-					cpfState.newColor[1] = r
-					cpfState.newColor[2] = g
-					cpfState.newColor[3] = b
-					cpfState.newColor[4] = a
-					cpfState.factory:SetConfigValue(cpfState.option.var, cpfState.newColor)
-					end
-					end
+	-- 2) Live picker read
+	if (type(r) ~= "number") then
+		r, g, b = CPF:GetColorRGB();
+		-- Prefer explicit alpha accessor
+		if (type(CPF.GetColorAlpha) == "function") then
+			local ok, v = pcall(CPF.GetColorAlpha, CPF);
+			if (ok) and (type(v) == "number") then
+				a = v;
+			end
+		end
+		-- Fallback to the opacity slider value (most reliable during drag)
+		if (type(a) ~= "number") and (_G.OpacitySliderFrame and type(_G.OpacitySliderFrame.GetValue) == "function") then
+			local ok, v = pcall(_G.OpacitySliderFrame.GetValue, _G.OpacitySliderFrame);
+			if (ok) and (type(v) == "number") then
+				a = 1 - v;
+			end
+		end
+		-- Last resort: CPF.opacity (some templates keep it in sync)
+		if (type(a) ~= "number") and (type(CPF.opacity) == "number") then
+			a = 1 - CPF.opacity;
+		end
+		if (type(a) ~= "number") then
+			a = 1;
+		end
+	end
+
+	-- Clamp alpha
+	if (a < 0) then a = 0 elseif (a > 1) then a = 1 end
+
+	-- Update frame only if its still showing this option. This can fail if the category page was changed.
+	-- With our "cpfState" table, we can still keep track of the correct option though
+	if (cpfState.frame.option == cpfState.option) then
+		cpfState.frame.texture:SetVertexColor(r,g,b,a);
+		cpfState.frame.color:SetRGBA(r,g,b,a);
+	end
+
+	-- Update color setting
+	if (cpfState.option.subType == 2) then
+		-- Clamp and round so we always feed integers to %x.
+		local ai = math.floor((a or 1) * 255 + 0.5);
+		local ri = math.floor((r or 0) * 255 + 0.5);
+		local gi = math.floor((g or 0) * 255 + 0.5);
+		local bi = math.floor((b or 0) * 255 + 0.5);
+		if (ai < 0) then ai = 0 elseif (ai > 255) then ai = 255 end
+		if (ri < 0) then ri = 0 elseif (ri > 255) then ri = 255 end
+		if (gi < 0) then gi = 0 elseif (gi > 255) then gi = 255 end
+		if (bi < 0) then bi = 0 elseif (bi > 255) then bi = 255 end
+		local hexColorMarkup = format("|c%.2x%.2x%.2x%.2x", ai, ri, gi, bi);
+		cpfState.factory:SetConfigValue(cpfState.option.var,hexColorMarkup); -- color:GenerateHexColorMarkup()
+	else
+		cpfState.newColor[1] = r;
+		cpfState.newColor[2] = g;
+		cpfState.newColor[3] = b;
+		cpfState.newColor[4] = a;
+		cpfState.factory:SetConfigValue(cpfState.option.var,cpfState.newColor);
+	end
+end
 
 -- OnClick
 local function ColorButton_OnClick(self,button)
@@ -323,12 +388,13 @@ local function ColorButton_OnClick(self,button)
 		cpfState.newColor = {};
 	end
 
-	local opacity = (1 - (a or 1));
+		-- v24 semantics: "opacity" parameter is (1 - alpha)
+		local opacity = 1 - ((type(a) == "number") and a or 1);
 
 	-- these are fields the CPF uses
 	--CPF.func = ColorButton_ColorPickerFunc;
 
-	--CPF.cancelFunc = ColorButton_ColorPickerFunc;
+	--CPF.cancelFunc = function() ColorButton_ColorPickerFunc(cpfState.prevColor); end;
 
 	--CPF.opacityFunc = ColorButton_ColorPickerFunc;
 
@@ -362,30 +428,27 @@ local function ColorButton_OnClick(self,button)
 
 	-- new functionality for color picker
 
+	CPF:SetupColorPickerAndShow({
 
-       CPF:SetupColorPickerAndShow({
+		r = r,
 
-               r = r,
+		g = g,
 
-               g = g,
+		b = b,
 
-               b = b,
+			opacity = opacity,
 
-               opacity = opacity,
+		hasOpacity = true,
 
-                hasOpacity = true,
+			swatchFunc = ColorButton_ColorPickerFunc,
+			opacityFunc = ColorButton_ColorPickerFunc,
 
-                swatchFunc = ColorButton_ColorPickerFunc,
+			-- Cancel may pass a restore table (no methods). Handle both.
+			cancelFunc = function(restore)
+				ColorButton_ColorPickerFunc(restore or cpfState.prevColor);
+			end
 
-                func = ColorButton_ColorPickerFunc,
-
-                opacityFunc = ColorButton_ColorPickerFunc,
-
-                cancelFunc = ColorButton_ColorPickerFunc,
-
-                previousValues = cpfState.prevColor,
-
-        })
+	})
 
 
 
@@ -420,7 +483,20 @@ azof.objects.Color = {
 		if (option.subType == 2) then
 			self.color:SetFromHexColorMarkup(cfgValue);
 		else
-			self.color:SetRGBA(unpack(cfgValue));
+				-- cfgValue is normally an array {r,g,b,a}, but some configs store a keyed
+				-- table {r=,g=,b=,a=}. Support both so alpha ...
+				local r, g, b, a;
+				if (type(cfgValue) == "table") then
+					r = cfgValue[1] or cfgValue.r;
+					g = cfgValue[2] or cfgValue.g;
+					b = cfgValue[3] or cfgValue.b;
+					a = cfgValue[4] or cfgValue.a;
+				end
+				if (type(r) ~= "number") then r = 1 end
+				if (type(g) ~= "number") then g = 1 end
+				if (type(b) ~= "number") then b = 1 end
+				if (type(a) ~= "number") then a = 1 end
+				self.color:SetRGBA(r,g,b,a);
 		end
 		self.texture:SetVertexColor(self.color:GetRGBA());
 	end,
