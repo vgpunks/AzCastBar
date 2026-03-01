@@ -190,7 +190,7 @@ function plugin:UpdateRollBars()
 		self.bars[i]:Hide();
 	end
 	-- Update Tooltip
-	local mouseFocus = GetMouseFocus();
+	local mouseFocus = (GetMouseFoci and GetMouseFoci()[1]) or (GetMouseFocus and GetMouseFocus());
 	if (mouseFocus) and (gtt:IsOwned(mouseFocus)) and (mouseFocus.cfg == plugin.cfg) then
 		OnEnter(mouseFocus);
 	end

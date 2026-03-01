@@ -1,0 +1,7 @@
+## Interface: 90001
+## Version: 20.10.31
+## Title: ACB LootRoll
+## Author: Aezay (Earthen Ring EU)
+## Notes: Loot Roll Timer Plugin for AzCastBar
+## Dependencies: AzCastBar
+acbLootRoll.lua

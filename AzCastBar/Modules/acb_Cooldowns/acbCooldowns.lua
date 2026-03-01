@@ -1,7 +1,4 @@
 local GetTime = GetTime;
--- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
--- C_Spell API when the global does not exist.
-local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
 
 -- Extra Options
 local extraOptions = {
@@ -16,18 +13,6 @@ local extraOptions = {
 -- Variables
 local plugin = AzCastBar:CreateMainBar("Frame","Cooldowns",extraOptions,true);
 local timers = LibTableRecycler:New();
-
--- Spells that should never display cooldowns
-local ignoredSpells = {}
-do
-    local revivePet = GetSpellInfo(125439)
-    if type(revivePet) == "table" then
-        revivePet = revivePet.name
-    end
-    if revivePet then
-        ignoredSpells[revivePet] = true
-    end
-end
 
 --------------------------------------------------------------------------------------------------------
 --                                            Frame Scripts                                           --
@@ -81,44 +66,76 @@ end
 
 -- Query Cooldowns
 function plugin:QueryCooldowns()
-        timers:Recycle();
-       for tab = 1, C_SpellBook.GetNumSpellBookSkillLines() do
-               local skillLineInfo = C_SpellBook.GetSpellBookSkillLineInfo(tab)
-               if not skillLineInfo then
-                       break;
-               end
-               local offset = skillLineInfo.itemIndexOffset or skillLineInfo.spellOffset or 0
-               local numSpells = skillLineInfo.numSpellBookItems or skillLineInfo.numSlots or 0
-               local name = skillLineInfo.name
-               if (not name) then
-                       break;
-               end
-                for i = offset + 1, offset + numSpells do
-                        local info = C_SpellBook.GetSpellBookItemInfo(i, Enum.SpellBookSpellBank.Player)
-                        local spellID = info and info.spellID
-                        if spellID then
-                                local cooldown = C_Spell.GetSpellCooldown(spellID)
-                                local start, duration = cooldown.startTime, cooldown.duration
-                                if (duration) and (duration > 0) and (duration > self.cfg.minShownCooldown) and (self.cfg.maxShownCooldown == 0 or duration < self.cfg.maxShownCooldown) then
-                                local spellName, _, texture = C_Spell.GetSpellInfo(spellID);
-                                if type(spellName) == "table" then
-                                        texture = spellName.iconID;
-                                        spellName = spellName.name;
-                                end
-                                if spellName and not ignoredSpells[spellName] then
-                                        local tbl = timers:Fetch();
-                                        tbl.name = spellName;
-                                        tbl.duration = duration;
-                                        tbl.startTime = start;
-                                        tbl.endTime = start + duration;
-                                        tbl.texture = texture;
-                                end
-                                end
-                        end
-                end
-        end
-        sort(timers,SortCooldownsFunc);
-        self:UpdateTimers();
+	timers:Recycle();
+
+	local bank = Enum.SpellBookSpellBank.Player;
+
+	local function SafeTest(fn)
+		local ok, res = pcall(fn);
+		if ok then
+			return res;
+		end
+		return false;
+	end
+
+	local function SafeAdd(a, b)
+		local ok, res = pcall(function() return a + b; end);
+		if ok and type(res) == "number" then
+			return res;
+		end
+		return nil;
+	end
+
+	for skillLineIndex = 1, (C_SpellBook.GetNumSpellBookSkillLines() or 0) do
+		-- Some clients return nil unless the bank is provided; extra args are harmless if unused.
+		local skillLineInfo = C_SpellBook.GetSpellBookSkillLineInfo(skillLineIndex, bank) or C_SpellBook.GetSpellBookSkillLineInfo(skillLineIndex);
+		if skillLineInfo and skillLineInfo.itemIndexOffset and skillLineInfo.numSpellBookItems then
+			local offset = skillLineInfo.itemIndexOffset;
+			local numItems = skillLineInfo.numSpellBookItems;
+
+			for itemIndex = offset + 1, offset + numItems do
+				local itemType, actionID, spellID = C_SpellBook.GetSpellBookItemType(itemIndex, bank);
+				if itemType == Enum.SpellBookItemType.Spell then
+					local sid = spellID or actionID;
+					if sid and (not (C_Secrets and C_Secrets.ShouldSpellCooldownBeSecret) or not C_Secrets.ShouldSpellCooldownBeSecret(sid)) then
+						local cd = C_SpellBook.GetSpellBookItemCooldown(itemIndex, bank);
+						local start, duration, enabled;
+						if type(cd) == "table" then
+							start = cd.startTime;
+							duration = cd.duration;
+							enabled = cd.isEnabled;
+						else
+							start, duration, enabled = C_SpellBook.GetSpellBookItemCooldown(itemIndex, bank);
+						end
+
+						local isEnabled = (enabled == nil) and true or SafeTest(function() return enabled ~= 0 and enabled ~= false; end);
+						local withinRange = SafeTest(function()
+							if not start or not duration then return false; end
+							if start <= 0 then return false; end -- only show active cooldowns
+							if duration <= self.cfg.minShownCooldown then return false; end
+							if self.cfg.maxShownCooldown ~= 0 and duration >= self.cfg.maxShownCooldown then return false; end
+							return true;
+						end);
+
+						if isEnabled and withinRange then
+							local endTime = SafeAdd(start, duration);
+							if endTime then
+								local tbl = timers:Fetch();
+								local spellInfo = C_Spell.GetSpellInfo(sid);
+								tbl.name = (spellInfo and spellInfo.name) or (C_Spell.GetSpellName and C_Spell.GetSpellName(sid)) or "";
+								tbl.texture = (spellInfo and spellInfo.iconID) or nil;
+								tbl.duration = duration;
+								tbl.startTime = start;
+								tbl.endTime = endTime;
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	sort(timers,SortCooldownsFunc);
+	self:UpdateTimers();
 end
 
 -- Updates Timers
@@ -129,8 +146,8 @@ function plugin:UpdateTimers()
 		bar.index = index;
 		bar.timer = timer;
 
-                bar.icon:SetTexture(timer.texture);
-                bar.name:SetText(timer.name or "");
+		bar.icon:SetTexture(timer.texture);
+		bar.name:SetText(timer.name);
 
 		bar.status:SetStatusBarColor(unpack(self.cfg.colNormal));
 
@@ -147,17 +164,11 @@ function plugin:OnConfigChanged(cfg)
 	if (cfg.enabled) then
 		self:RegisterEvent("SPELL_UPDATE_COOLDOWN");
 		self:QueryCooldowns();
-        else
-                self:UnregisterAllEvents();
-                timers:Recycle();
-                self:UpdateTimers();
-        end
-
-       -- Apply new appearance settings to visible bars
-       for _, bar in ipairs(self.bars) do
-               bar:SetAlpha(cfg.alpha)
-               bar.status:SetStatusBarColor(unpack(cfg.colNormal))
-       end
+	else
+		self:UnregisterAllEvents();
+		timers:Recycle();
+		self:UpdateTimers();
+	end
 end
 
 --------------------------------------------------------------------------------------------------------

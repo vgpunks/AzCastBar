@@ -14,15 +14,24 @@ local plugin = AzCastBar:CreateMainBar("Frame","GlobalCooldown",extraOptions);
 
 local GLOBAL_COOLDOWN_TIME = 1.5;
 
-local function ToNumber(value)
-	if (value == nil) then
-		return nil;
+-- Midnight+: cooldown fields may be "secret values" (protected) that cannot be compared or used
+-- in arithmetic. Avoid using cooldown.startTime/duration entirely and estimate GCD from haste.
+local GetHaste = GetHaste;
+local function EstimateGCDDuration()
+	local hastePct = 0;
+	if GetHaste then
+		hastePct = GetHaste() or 0;
 	end
-	local ok, number = pcall(tonumber, value);
-	if (ok) then
-		return number;
+	local gcd = GLOBAL_COOLDOWN_TIME / (1 + hastePct / 100);
+	-- Retail minimum GCD
+	if (gcd < 0.75) then
+		gcd = 0.75;
 	end
-	return nil;
+	-- Clamp to base
+	if (gcd > GLOBAL_COOLDOWN_TIME) then
+		gcd = GLOBAL_COOLDOWN_TIME;
+	end
+	return gcd;
 end
 
 --------------------------------------------------------------------------------------------------------
@@ -56,21 +65,13 @@ local function OnEvent(self,event,unit,castGUID,spellID)
 	-- Start GCD -- START events are for casts, SUCCEEDED are for instants
 	-- NOTE: If a spell is cast right after /stopcasting, GetSpellCooldown() returns zero (must be a bug)
 	elseif (event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_SUCCEEDED") then
-		local cooldown = C_Spell.GetSpellCooldown(spellID)
-		local startTime = ToNumber(cooldown.startTime)
-		local duration = ToNumber(cooldown.duration)
-		if (not startTime) or (not duration) then
-			local fallbackStart, fallbackDuration = GetSpellCooldown(spellID);
-			startTime = ToNumber(fallbackStart) or startTime;
-			duration = ToNumber(fallbackDuration) or duration;
-		end
-		if (startTime and duration) and (duration > 0) and (duration <= GLOBAL_COOLDOWN_TIME) then
-			self.duration = duration;
-			self.endTime = (startTime + duration);
-			self.icon:SetTexture(C_Spell.GetSpellTexture(spellID) or "Interface\\Icons\\INV_Misc_PocketWatch_02");
-
-			self:ResetAndShow(self.duration,1);
-		end
+		-- We intentionally do not read/compare cooldown.duration because it may be a protected
+		-- "secret value". Instead, estimate the GCD and show it.
+		local duration = EstimateGCDDuration();
+		self.duration = duration;
+		self.endTime = (GetTime() + duration);
+		self.icon:SetTexture(C_Spell.GetSpellTexture(spellID) or "Interface\\Icons\\INV_Misc_PocketWatch_02");
+		self:ResetAndShow(self.duration,1);
 	-- Abort GCD
 	elseif (event == "UNIT_SPELLCAST_STOP") then
 		self.fadeTime = self.cfg.fadeTime;
@@ -85,11 +86,9 @@ function plugin:OnConfigChanged(cfg)
 		if (cfg.showInstants) then
 			self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED");
 		end
-               self:RegisterEvent("UNIT_SPELLCAST_STOP");
-               self.status:SetStatusBarColor(unpack(cfg.colNormal));
-        end
-
-       self:SetAlpha(cfg.alpha)
+		self:RegisterEvent("UNIT_SPELLCAST_STOP");
+		self.status:SetStatusBarColor(unpack(cfg.colNormal));
+	end
 end
 
 --------------------------------------------------------------------------------------------------------

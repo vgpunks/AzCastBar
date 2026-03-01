@@ -2,11 +2,10 @@ local GetTime = GetTime;
 
 -- Extra Options
 local extraOptions = {
-        {
-                [0] = "Options",
-                { type = "Slider", var = "threshold", default = 75, label = "Display Threshold", min = 0, max = 100, step = 1 },
-                { type = "Color", var = "colNormal", default = { 0.4, 0.6, 0.8 }, label = "Threat Bar Color" },
-        },
+	{
+		[0] = "Options",
+		{ type = "Slider", var = "threshold", default = 75, label = "Display Threshold", min = 0, max = 100, step = 1 },
+	},
 };
 
 -- Plugin
@@ -67,13 +66,9 @@ function plugin:OnConfigChanged(cfg)
 		self:RegisterEvent("PLAYER_TARGET_CHANGED");
 		self:RegisterEvent("UNIT_THREAT_LIST_UPDATE");
 		self:RegisterEvent("UNIT_THREAT_SITUATION_UPDATE");
-        else
-                self:Hide();
-        end
-
-       -- Update bar look
-       self:SetAlpha(cfg.alpha)
-       self.status:SetStatusBarColor(unpack(self.cfg.colNormal))
+	else
+		self:Hide();
+	end
 end
 
 --------------------------------------------------------------------------------------------------------

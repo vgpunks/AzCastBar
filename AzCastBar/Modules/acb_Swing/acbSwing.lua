@@ -23,25 +23,15 @@ local plugin = AzCastBar:CreateMainBar("Frame","Swing",extraOptions);
 local playerGUID = UnitGUID("player");
 
 -- Localized Names
--- Spell Ids
 local slamId = 1464;
--- WoW 11.0 removed the global GetSpellInfo function, so fall back to the
--- C_Spell API when the global does not exist.
-local GetSpellInfo = GetSpellInfo or (C_Spell and C_Spell.GetSpellInfo);
-
-local function GetSpellName(spellID, fallback)
-	local info = GetSpellInfo and GetSpellInfo(spellID);
-	if (type(info) == "table") then
-		return info.name or fallback;
-	end
-	return info or fallback;
-end
+local _slamInfo = C_Spell.GetSpellInfo(slamId);
+local slam = _slamInfo and _slamInfo.name;
 --local autoShotId = 75;
 --local autoShot = GetSpellInfo(autoShotId);
 --local wandShotId = 5019;
 --local wandShot = GetSpellInfo(wandShotId);
---local meleeSwing = GetLocale() == "enUS" and "Melee Swing" or GetSpellInfo(6603);
---local meleeSwing = C_Spell.GetSpellInfo(6603);
+local _meleeSInfo = C_Spell.GetSpellInfo(6603);
+local meleeSwing = _meleeSInfo and _meleeSInfo.name or "Melee Swing";
 --[[local spellSwingReset = {
 	[GetSpellInfo(78)] = true,		-- Heroic Strike
 	[GetSpellInfo(845)] = true,		-- Cleave
@@ -50,17 +40,13 @@ end
 	[GetSpellInfo(56815)] = true,	-- Rune Strike
 };]]
 
---local autoShotSpells = {
---	[75] = C_Spell.GetSpellInfo(75),			-- autoshot
---	[5019] = C_Spell.GetSpellInfo(5019),		-- wand
---}
-
-local slam = GetSpellName(slamId, "Slam");
-local meleeSwing = GetSpellName(6603, "Melee");
-local autoShotSpells = {
-        [75] = GetSpellName(75, "Auto Shot"),
-        [5019] = GetSpellName(5019, "Shoot"),
-}
+local autoShotSpells = {};
+do
+	local info75 = C_Spell.GetSpellInfo(75);
+	local info5019 = C_Spell.GetSpellInfo(5019);
+	autoShotSpells[75] = info75 and info75.name;
+	autoShotSpells[5019] = info5019 and info5019.name;
+end
 
 --------------------------------------------------------------------------------------------------------
 --                                           Event Handling                                           --
@@ -72,8 +58,7 @@ function plugin:OnCombatEvent(timestamp,event,hideCaster,sourceGUID,sourceName,s
 	if (sourceGUID == playerGUID) then
 		local prefix, suffix = event:match(COMBAT_EVENT_PREFIX_SUFFIX);
 		if (prefix == "SWING") then
-			self:StartSwing(UnitAttackSpeed("player"), meleeSwing or "Swing")
-			--self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
+			self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
 		end
 	-- Something Happens to our Player
 	elseif (destGUID == playerGUID) then
@@ -98,26 +83,19 @@ end
 
 -- Spell Cast Succeeded
 function plugin:UNIT_SPELLCAST_SUCCEEDED(event,unit,castGUID,spellId)
-if (unit == "player") then
-	local autoShotName = autoShotSpells[spellId];
-if (autoShotName) then
-	self:StartSwing(UnitAttackSpeed("player"), autoShotName or "Auto");
-elseif (spellId == slamId) and (self.slamStart) then
-	self.startTime = (self.startTime + GetTime() - self.slamStart);
-self.slamStart = nil;
--- Az: cata has no spells that are on next melee afaik?
---              elseif (spellSwingReset[spell]) then
---                      self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
+	if (unit == "player") then
+		local autoShotName = autoShotSpells[spellId];
+		if (autoShotName) then
+			self:StartSwing(UnitRangedDamage("player"),autoShotName);
+		elseif (spellId == slamId) and (self.slamStart) then
+			self.startTime = (self.startTime + GetTime() - self.slamStart);
+			self.slamStart = nil;
+		-- Az: cata has no spells that are on next melee afaik?
+--		elseif (spellSwingReset[spell]) then
+--			self:StartSwing(UnitAttackSpeed("player"),meleeSwing);
+		end
+	end
 end
-end
-end
- 
- -- Warrior Only
- 
- --------------------------------------------------------------------------------------------------------
- --                                          Initialise Plugin                                         --
- --------------------------------------------------------------------------------------------------------
- 
 
 -- Warrior Only
 if (classID == "WARRIOR") then
@@ -181,13 +159,9 @@ function plugin:OnConfigChanged(cfg)
 			self:RegisterEvent("UNIT_SPELLCAST_START");
 			self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED");
 		end
-        else
-                self:UnregisterAllEvents();
-        end
-
-       -- Update bar appearance
-       self:SetAlpha(cfg.alpha)
-       self.status:SetStatusBarColor(unpack(self.cfg.colNormal))
+	else
+		self:UnregisterAllEvents();
+	end
 end
 
 plugin.icon:SetTexture("Interface\\Icons\\Spell_Shadow_SoulLeech_2");

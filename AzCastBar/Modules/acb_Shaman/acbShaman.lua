@@ -4,8 +4,6 @@ end
 
 local GetTime = GetTime;
 local UnitAura = UnitAura;
-local C_Spell = C_Spell;
-local GetSpellInfo = GetSpellInfo;
 
 local LWE = LibWeaponEnchant;
 
@@ -15,7 +13,7 @@ local extraOptions = {
 		[0] = "Filters",
 		{ type = "Check", var = "showEnchants", default = true, label = "Show Weapon Imbues" },
 		{ type = "Check", var = "showShields", default = true, label = "Show Elemental Shields" },
-		{ type = "Check", var = "showBloodlust", default = true, label = "Show Bloodlust / Heroism" },
+		{ type = "Check", var = "showBloodlust", default = true, label = "Show Blodlust / Heroism" },
 		{ type = "Check", var = "showEleMastery", default = true, label = "Show Elemental Mastery" },
 		{ type = "Check", var = "showMaelstrom", default = true, label = "Show Maelstrom" },
 		{ type = "Check", var = "showWolves", default = true, label = "Show Spirit Wolves" },
@@ -36,31 +34,27 @@ local uToken = "player";
 local timers = LibTableRecycler:New();
 
 -- Spell Names
-local function GetSpellInfoCompat(spellID)
-	if (C_Spell and C_Spell.GetSpellInfo) then
-		local info = C_Spell.GetSpellInfo(spellID);
-		if (type(info) == "table") then
-			return info.name, nil, info.iconID;
-		end
-	end
-	if (GetSpellInfo) then
-		return GetSpellInfo(spellID);
-	end
-	return nil, nil, nil;
+local function GetSpellName(id)
+	local info = C_Spell.GetSpellInfo(id);
+	return info and info.name;
 end
-
-local maelstrom = GetSpellInfoCompat(53817);
-local spiritWolves, _, spiritWolvesIcon = GetSpellInfoCompat(51533);
-local bloodlust = GetSpellInfoCompat(UnitFactionGroup("player") == FACTION_ALLIANCE and 32182 or 2825);
-local elemastery = GetSpellInfoCompat(16166);
+local function GetSpellIconByID(id)
+	local info = C_Spell.GetSpellInfo(id);
+	return info and info.iconID;
+end
+local maelstrom = GetSpellName(53817);
+local spiritWolves = GetSpellName(51533);
+local spiritWolvesIcon = GetSpellIconByID(51533);
+local bloodlust = GetSpellName(UnitFactionGroup("player") == FACTION_ALLIANCE and 32182 or 2825);
+local elemastery = GetSpellName(16166);
 local elementalShields = {
---	[GetSpellInfo(324)] = true,		-- Lightning
---	[GetSpellInfo(52127)] = true,	-- Water
---	[GetSpellInfo(974)] = true,		-- Earth
+--	[GetSpellName(324)] = true,		-- Lightning
+--	[GetSpellName(52127)] = true,	-- Water
+--	[GetSpellName(974)] = true,		-- Earth
 
-	[GetSpellInfoCompat(8788)] = true,		-- Lightning
-	[GetSpellInfoCompat(34827)] = true,	-- Water
-	[GetSpellInfoCompat(379)] = true,		-- Earth
+	[GetSpellName(8788)] = true,		-- Lightning
+	[GetSpellName(34827)] = true,	-- Water
+	[GetSpellName(379)] = true,		-- Earth
 
 --	[GetSpellInfo("Lightning Shield")] = true,		-- Lightning
 --	[GetSpellInfo("Water Shield")] = true,	-- Water
@@ -149,17 +143,27 @@ function plugin:UpdateTimers()
 	end
 end
 
--- returns the UnitAura returns for the first aura with the given name -- Also check AuraUtil.FindAuraByName()
+-- returns aura data for the first aura with the given name (Midnight-compatible)
 function plugin:UnitAuraByName(unit,auraToFind)
-	local index = 1;
-	while (true) do
-		local auraName = UnitAura(unit,index);
-		if not (auraName) then
- 			return;
-		elseif (auraName == auraToFind) then
- 			return UnitAura(unit,index);
+	-- Try AuraUtil first (available since Dragonflight)
+	if AuraUtil and AuraUtil.FindAuraByName then
+		local auraData = AuraUtil.FindAuraByName(auraToFind, unit);
+		if auraData then
+			return auraData.name, auraData.icon, auraData.applications, auraData.dispelName, auraData.duration, auraData.expirationTime;
 		end
-		index = (index + 1);
+		return;
+	end
+	-- Fallback: iterate via C_UnitAuras.GetAuraDataByIndex
+	for _, auraType in ipairs({"HELPFUL","HARMFUL"}) do
+		local index = 1;
+		while true do
+			local auraData = C_UnitAuras.GetAuraDataByIndex(unit, index, auraType);
+			if not auraData then break; end
+			if auraData.name == auraToFind then
+				return auraData.name, auraData.icon, auraData.applications, auraData.dispelName, auraData.duration, auraData.expirationTime;
+			end
+			index = index + 1;
+		end
 	end
 end
 

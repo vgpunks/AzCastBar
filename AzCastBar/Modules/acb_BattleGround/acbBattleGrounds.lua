@@ -107,7 +107,7 @@ local function SetupWSGFrame(faction,name)
 		button.text:SetTextColor(0,1,0);
 		local color = defNameColor;
 		if (faction ~= UnitFactionGroup("player")) then
-			for i = 1, GetNumRaidMembers() do
+			for i = 1, GetNumGroupMembers() do
 				if (name == UnitName("raid"..i)) then
 					local _, class = UnitClass("raid"..i);
 					color = CLASS_COLORS[class];
@@ -387,20 +387,11 @@ function plugin:OnConfigChanged(cfg)
 		self:RegisterEvent("UPDATE_BATTLEFIELD_STATUS");
 		self:RegisterEvent("PLAYER_REGEN_ENABLED");
 		self:RegisterEvent("ZONE_CHANGED_NEW_AREA");
-        else
-                self:UnregisterAllEvents();
-                timers:Recycle();
-        end
-        self:UpdateTimers();
-
-       -- Refresh existing bars with new appearance
-       for _, bar in ipairs(self.bars) do
-               bar:SetAlpha(cfg.alpha)
-               local color = bar.table and self.cfg["col"..bar.table.faction] or self.cfg.colNeutral
-               if color then
-                       bar.status:SetStatusBarColor(unpack(color))
-               end
-       end
+	else
+		self:UnregisterAllEvents();
+		timers:Recycle();
+	end
+	self:UpdateTimers();
 end
 
 --------------------------------------------------------------------------------------------------------

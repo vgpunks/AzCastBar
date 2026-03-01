@@ -82,10 +82,10 @@ local function OnUpdate(self,elapsed)
 	if (self.colorTimeoutFlag) and (self.timeLeft <= self.colorTimeoutFlag) then
 		self.colorTimeoutFlag = nil;
 		self.status:SetStatusBarColor(unpack(self.cfg.colTimeOut));
-               if (self.cfg.bgColorAlpha > 0) then
-                       self.bg:SetVertexColor(unpack(self.cfg.colTimeOut));
-               end
-               self.bg:SetAlpha(self.cfg.bgColorAlpha);
+		if (self.cfg.bgColorAlpha > 0) then
+			self.bg:SetVertexColor(unpack(self.cfg.colTimeOut));
+			self.bg:SetAlpha(self.cfg.bgColorAlpha);
+		end
 	end
 end
 
@@ -96,7 +96,9 @@ local function OnClick(self,button)
 		if (button == "LeftButton") then
 			local editBox = ChatEdit_GetActiveWindow();
 			if (IsModifiedClick("CHATLINK")) and (editBox) and (editBox:IsVisible()) then
-				local spellName, _, _, _, _, _, _, _, _, spellId = UnitAura(self.cfg.unit,timer.index,timer.type);	-- [18.07.19] 8.0/BfA: "dropped second parameter"
+				local auraData = C_UnitAuras.GetAuraDataByIndex(self.cfg.unit, timer.index, timer.type);
+				local spellName = auraData and auraData.name;
+				local spellId = auraData and auraData.spellId;
 				if (spellName or spellId) then
 					securecall(editBox.SetText,editBox,format("/cancelaura %s",spellName));
 --					editBox:Insert(format("/cancelaura %s",spellName));
@@ -127,9 +129,24 @@ local function OnEnter(self)
 		GameTooltip:AddLine("Tracking",1,1,1);
 		GameTooltip:Show();
 	else
-		GameTooltip:SetUnitAura(self.cfg.unit,timer.index,timer.type);
+		-- SetUnitAura was removed in Midnight; use hyperlink via AuraUtil if available
+		local shown = false;
+		if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+			local auraData = C_UnitAuras.GetAuraDataByIndex(self.cfg.unit, timer.index, timer.type);
+			if auraData and auraData.spellId then
+				local link = GetSpellLink and GetSpellLink(auraData.spellId);
+				if link then
+					GameTooltip:SetHyperlink(link);
+					shown = true;
+				end
+			end
+		end
+		if not shown and GameTooltip.SetUnitAura then
+			GameTooltip:SetUnitAura(self.cfg.unit, timer.index, timer.type);
+		end
 		if (self.cfg.showAuraCaster) then
-			local _, _, _, _, _, _, casterUnit = UnitAura(self.cfg.unit,timer.index,timer.type);	-- [18.07.19] 8.0/BfA: "dropped second parameter"
+			local auraData2 = C_UnitAuras.GetAuraDataByIndex(self.cfg.unit, timer.index, timer.type);
+			local casterUnit = auraData2 and auraData2.sourceUnit;
 			if (casterUnit) then
 				GameTooltip:AddLine("<Applied by "..tostring(UnitName(casterUnit))..">",0.4,0.72,1);
 				GameTooltip:Show();
@@ -157,10 +174,8 @@ local function SortAurasFunc(a,b)
 		return a.label < b.label;
 	elseif (a.endTime == 0 or b.endTime == 0) then
 		return a.endTime == 0;
-	elseif (a.endTime == b.endTime) then
-		local aLabel = type(a.label) == "table" and a.label.name or a.label
-		local bLabel = type(b.label) == "table" and b.label.name or b.label
-		return (aLabel or "") < (bLabel or "")
+	else
+		return a.endTime > b.endTime;
 	end
 end
 
@@ -259,7 +274,15 @@ function AuraPluginMixin:QueryAuras(unit,auraType,showSelfAuras,showPetAuras,sho
 	local index = 1;
 	local isFiltered = (showSelfAuras or showPetAuras or showStealable);
 	while (true) do
-		local name, icon, count, debuffType, duration, endTime, casterUnit, isStealable = C_UnitAuras.GetAuraDataByIndex(unit,index,auraType);	-- [18.07.19] 8.0/BfA: "dropped second parameter"
+		local auraData = C_UnitAuras.GetAuraDataByIndex(unit,index,auraType);
+		local name = auraData and auraData.name;
+		local icon = auraData and auraData.icon;
+		local count = auraData and auraData.applications;
+		local debuffType = auraData and auraData.dispelName;
+		local duration = auraData and auraData.duration;
+		local endTime = auraData and auraData.expirationTime;
+		local casterUnit = auraData and auraData.sourceUnit;
+		local isStealable = auraData and auraData.isStealable;
 		if (not name) then
 			break;
 		elseif (not isFiltered) or (showStealable and isStealable) or (showSelfAuras and casterUnit == "player") or (showPetAuras and (casterUnit == "pet" or casterUnit == "vehicle")) then
@@ -304,12 +327,12 @@ function AuraPluginMixin:UpdateTimers()
 			color = (timer.type == "ENCHANT" and self.cfg.colEnchant) or (timer.type == "HARMFUL" and self.cfg.colDebuff) or (self.cfg.colBuff);
 		end
 		bar.status:SetStatusBarColor(unpack(color));
-               if (self.cfg.bgColorAlpha > 0) then
-                       bar.bg:SetVertexColor(unpack(color));
-               else
-                       bar.bg:SetVertexColor(unpack(self.cfg.colBackGround));
-               end
-               bar.bg:SetAlpha(self.cfg.bgColorAlpha);
+		if (self.cfg.bgColorAlpha > 0) then
+			bar.bg:SetVertexColor(unpack(color));
+			bar.bg:SetAlpha(self.cfg.bgColorAlpha);
+		else
+			bar.bg:SetVertexColor(unpack(self.cfg.colBackGround));
+		end
 
 		-- OnUpdate script?
 		if (timer.duration == 0) then
@@ -387,15 +410,19 @@ function AuraPluginMixin:OnConfigChanged(cfg)
 	end
 	-- Blizzard UI Fixup -- Player unit only -- PlayerAuras bar only
 	if (cfg.unit == "player") and (self.token == "PlayerAuras") and (cfg.enabled) then
-		-- BuffFrame
-		if (cfg.hideAuras) then
-			BuffFrame:UnregisterEvent("UNIT_AURA");
-			BuffFrame:Hide();
-		else
-			BuffFrame:RegisterEvent("UNIT_AURA");
-			BuffFrame:Show();
-			if (BuffFrame:GetScript("OnEvent")) then
-				BuffFrame:GetScript("OnEvent")(BuffFrame,"UNIT_AURA","player");
+		-- BuffFrame was replaced by PlayerBuffFrame in Midnight; support both.
+		local blizzBuffFrame = _G.PlayerBuffFrame or _G.BuffFrame;
+		if blizzBuffFrame then
+			-- BuffFrame
+			if (cfg.hideAuras) then
+				blizzBuffFrame:UnregisterEvent("UNIT_AURA");
+				blizzBuffFrame:Hide();
+			else
+				blizzBuffFrame:RegisterEvent("UNIT_AURA");
+				blizzBuffFrame:Show();
+				if (blizzBuffFrame:GetScript("OnEvent")) then
+					blizzBuffFrame:GetScript("OnEvent")(blizzBuffFrame,"UNIT_AURA","player");
+				end
 			end
 		end
 		--[[ TempEnchantFrame

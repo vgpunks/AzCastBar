@@ -111,17 +111,11 @@ function plugin:OnConfigChanged(cfg)
 		self:RegisterEvent("PLAYER_TOTEM_UPDATE");
 		self:RegisterEvent("PLAYER_ENTERING_WORLD");
 		OnEvent(self);
-        else
-                self:UnregisterAllEvents();
-                totems:Recycle();
-                self:UpdateTotemBars();
-        end
-
-       -- Update existing bars with new appearance
-       for _, bar in ipairs(self.bars) do
-               bar:SetAlpha(cfg.alpha)
-               bar.status:SetStatusBarColor(unpack(self.cfg.colNormal))
-       end
+	else
+		self:UnregisterAllEvents();
+		totems:Recycle();
+		self:UpdateTotemBars();
+	end
 end
 
 --------------------------------------------------------------------------------------------------------
